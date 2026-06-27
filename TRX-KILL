@@ -2,22 +2,32 @@
 # ========================================================
 # TOOL: TRX-KILL OSINT & CORE FRAMEWORK
 # AUTHOR: TRX-LILL
-# VERSION: 1.6.0
+# VERSION: 1.5.2
 # YEAR: 2026
 # License: GNU General Public License v3.0
 # ========================================================
 
 import os
 import sys
-import phonenumbers
-from phonenumbers import carrier, geocoder, timezone
+import shutil
 from time import sleep
+import socket
+import phonenumbers
+from phonenumbers import carrier, geocoder
 
-# Configuración de limpieza de pantalla
-class Clear:
-    class Screen:
-        @staticmethod
-        def Clear(): os.system('clear' if os.name == 'posix' else 'cls')
+# Configuración de rutas internas
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
+try:
+    from Core.Support import Clear
+except ImportError:
+    class Clear:
+        class Screen:
+            @staticmethod
+            def Clear(): os.system('clear' if os.name == 'posix' else 'cls')
+
 
 def mostrar_banner_trx():
     print("\033[1;31m" + r"""
@@ -31,65 +41,118 @@ def mostrar_banner_trx():
     print("\033[1;33m" + "        [+] REAL OSINT & TELECOM LOOKUP ENGINE [+]" + "\033[0m")
     print("\033[1;30m" + "   =====================================================" + "\033[0m\n")
 
-# --- OPCIÓN 1: CONSULTA EXTENDIDA ---
-def consulta_extendida():
+
+def obtener_coordenadas_pais(codigo_region):
+    coordenadas = {
+        "AR": "-34.6037,-58.3816", "MX": "19.4326,-99.1332", "CO": "4.7110,-74.0721",
+        "ES": "40.4167,-3.7037",  "PE": "-12.0464,-77.0428", "CL": "-33.4489,-70.6693",
+        "VE": "10.4806,-66.9036", "EC": "-0.1807,-78.4678", "BR": "-15.7938,-47.8828",
+        "US": "37.0902,-95.7129", "UY": "-34.9011,-56.1645", "BO": "-16.2902,-63.5887"
+    }
+    return coordenadas.get(codigo_region.upper(), "0.0000,0.0000")
+
+
+# ========================================================
+# OPCIÓN 1: INFO-NUMERO
+# ========================================================
+def modulo_lookup_numero():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    num = input("\033[1;32m[+] Ingresa el número (ej: 54911xxxxxxxx): \033[0m")
+    num = input("\033[1;32m[+] Ingresa el número (ej: 54911xxxxxxxx sin +): \033[0m")
+    
     try:
-        p = phonenumbers.parse("+" + num, None)
-        print("\n\033[1;33m[!] VERIFICANDO NÚMERO...\033[0m")
-        sleep(1.5)
-        print(f"\n\033[1;36mMÓVIL:\033[0m +{num}")
-        print(f"\033[1;36mPAÍS:\033[0m {geocoder.country_name_for_number(p, 'es')}")
-        print(f"\033[1;36mMAPA:\033[0m Localización nacional")
-        print(f"\033[1;36mGOOGLE MAP LINK:\033[0m https://www.google.com/maps/search/{geocoder.country_name_for_number(p, 'es')}")
-        print("\n\033[1;31m--- REPORTES ---\033[0m")
-        print("WHATSAPP: [NO]")
-        print("INSTAGRAM: [NO]")
-        print("\n\033[1;30mBUSCANDO MÁS INFORMACIÓN..........\033[0m")
-        sleep(1)
-        print("[+] Sin registros adicionales encontrados.")
-    except: print("\033[1;31m[!] Error al procesar.\033[0m")
+        Phone = phonenumbers.parse("+" + num, None)
+        pais = geocoder.country_name_for_number(Phone, "es")
+        operadora = carrier.name_for_number(Phone, "es")
+        region_code = phonenumbers.region_code_for_country_code(Phone.country_code)
+        coords = obtener_coordenadas_pais(region_code)
+        
+        print(f"\nMOVIL: +{num}")
+        print(f"COORDENADAS: {coords}")
+        print(f"OPERADOR: {operadora}")
+        print(f"GOOGLE MAP: https://www.google.com/maps?q={coords}")
+        print(f"TIPO DE WIFI: N/A")
+    except:
+        print("\033[1;31m\n[!] Error en el número.\033[0m")
 
-# --- OPCIÓN 2: SCANNER NÚMERO ---
-def scanner_numero():
+
+# ========================================================
+# OPCIÓN 2: INFORMACIÓN DEL DISPOSITIVO
+# ========================================================
+def modulo_information_ubicacion():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    num = input("\033[1;32m[+] Scanner activo. Ingresa número: \033[0m")
-    try:
-        p = phonenumbers.parse("+" + num, None)
-        print(f"\n\033[1;36m[✓] Prefijo:\033[0m {p.country_code}")
-        print(f"\033[1;36m[✓] Operadora:\033[0m {carrier.name_for_number(p, 'es')}")
-        print(f"\033[1;36m[✓] Zona Horaria:\033[0m {timezone.time_zones_for_number(p)}")
-    except: print("\033[1;31m[-] Error en scanner.\033[0m")
+    print(f"SISTEMA: {os.name}")
+    print(f"USUARIO: {os.getlogin() if hasattr(os, 'getlogin') else 'Termux'}")
 
-# --- OPCIÓN 7: GUARDAR TODO ---
-def guardar_reporte():
-    carpeta = input("\033[1;32m[+] Ingresa nombre de la carpeta: \033[0m")
-    if not os.path.exists(carpeta): os.makedirs(carpeta)
-    with open(f"{carpeta}/reporte.txt", "w") as f:
-        f.write("Reporte de TRX-KILL OSINT")
-    print(f"\033[1;32m[✓] Guardado en ./{carpeta}/\033[0m")
 
-# --- MENÚ PRINCIPAL ---
+# ========================================================
+# OPCIÓN 3: PORR-SCANNER
+# ========================================================
+def modulo_porr_scanner():
+    Clear.Screen.Clear()
+    mostrar_banner_trx()
+    target = input("[+] IP a escanear: ")
+    for port in [21, 22, 80, 443]:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        if s.connect_ex((target, port)) == 0:
+            print(f"[*] Puerto {port}: ABIERTO")
+        else:
+            print(f"[-] Puerto {port}: CERRADO")
+
+
+# ========================================================
+# OPCIÓN 4: CREADOR
+# ========================================================
+def modulo_creador():
+    Clear.Screen.Clear()
+    mostrar_banner_trx()
+    print("CREADOR: TRX-LILL")
+    print("REPOSITORIO: https://github.com/oscarporrillo2-creator")
+
+
+# ========================================================
+# OPCIÓN 5: VERSIÓN
+# ========================================================
+def modulo_version():
+    Clear.Screen.Clear()
+    mostrar_banner_trx()
+    print("VERSIÓN: 1.5.2")
+
+
+# ========================================================
+# OPCIÓN 6: LICENCIA Y DERECHOS DE AUTOR
+# ========================================================
+def modulo_licencia():
+    Clear.Screen.Clear()
+    mostrar_banner_trx()
+    print("LICENCIA: GNU General Public License v3.0")
+    print("RESPONSABILIDAD: Uso bajo criterio del usuario.")
+
+
+# ========================================================
+# CONTROLADORES DE MENÚ PRINCIPAL
+# ========================================================
 if __name__ == "__main__":
     while True:
         Clear.Screen.Clear()
         mostrar_banner_trx()
-        print(" [1] Consulta Extendida")
-        print(" [2] Scanner Número")
-        print(" [3] Creador")
-        print(" [4] Versión")
-        print(" [5] Licencia")
-        print(" [6] Salir")
-        print(" [7] Guardar Todo")
+        print(" 1) INFO-NUMERO")
+        print(" 2) INFORMACIÓN DEL DISPOSITIVO")
+        print(" 3) PORR-SCANNER")
+        print(" 4) CREADOR")
+        print(" 5) VERSIÓN")
+        print(" 6) LICENCIA Y DERECHOS DE AUTOR Y RESPONSABILIDAD")
+        print(" 7) UPDATE")
+        print(" 0) Salir\n")
         
-        opc = input("\n\033[1;32m[TRX-MENU]--> \033[0m")
-        if opc == "1": consulta_extendida(); input("\n(Enter)")
-        elif opc == "2": scanner_numero(); input("\n(Enter)")
-        elif opc == "3": print("\nCreador: TRX-LILL"); sleep(1)
-        elif opc == "4": print("\nVersión: 1.6.0"); sleep(1)
-        elif opc == "5": print("\nLicencia: GPLv3"); sleep(1)
-        elif opc == "6": break
-        elif opc == "7": guardar_reporte(); sleep(1)
+        opcion = input("\033[1;32m[TRX-KILL-MENU]--> \033[0m")
+        if opcion == "1": modulo_lookup_numero(); input("\nPresiona Enter...")
+        elif opcion == "2": modulo_information_ubicacion(); input("\nPresiona Enter...")
+        elif opcion == "3": modulo_porr_scanner(); input("\nPresiona Enter...")
+        elif opcion == "4": modulo_creador(); input("\nPresiona Enter...")
+        elif opcion == "5": modulo_version(); input("\nPresiona Enter...")
+        elif opcion == "6": modulo_licencia(); input("\nPresiona Enter...")
+        elif opcion == "7": print("\nBuscando..."); sleep(1)
+        elif opcion == "0": break
