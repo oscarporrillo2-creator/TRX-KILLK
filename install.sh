@@ -22,11 +22,7 @@ pkg install git -y
 
 echo -e "\e[1;32m[+] Instalando módulos de Python necesarios...\e[0m"
 pip install --upgrade pip
-if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
-else
-    pip install phonenumbers requests
-fi
+pip install phonenumbers requests
 
 echo -e "\e[1;32m[+] Configurando permisos de ejecución para TRX-KILL...\e[0m"
 if [ -f "TRX-KILL" ]; then
