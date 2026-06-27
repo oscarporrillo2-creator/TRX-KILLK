@@ -200,4 +200,34 @@ class TrxKillScanner:
                 pass
 
         with open(report, "w", encoding="utf-8") as f:
-            f.write(f"TRX-
+            f.write(f"TRX-KILL REPORT RUNNING ON: {dt_string}\n")
+            f.write(f"TARGET TELECOM/USER: {username}\n\n")
+
+        nomefile = os.path.join(BASE_DIR, "Site_lists/Username/site_list.json")
+        TrxKillScanner.Controll(username, nomefile, "Identificador Local", report, "USERNAME", successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags)
+        
+        print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " Análisis de presencia digital completado para: " + username)
+        if len(successfull) > 0:
+            for names in successfull:
+                print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + f" Vinculado: {names}")
+        else:
+            print(Font.Color.RED + "[-] No se detectaron perfiles públicos evidentes vinculados directamente.")
+
+
+# ========================================================
+# CONTROLADORES DE MENÚ ORGANIZADOS SEGÚN PETICIÓN
+# ========================================================
+if __name__ == "__main__":
+    while True:
+        Clear.Screen.Clear()
+        mostrar_banner_trx()
+        print(" [1] INFORMATION NÚMERO (Datos de Línea, País y Operador)")
+        print(" [2] SCANER NÚMERO (Ver si tiene Redes Sociales vinculadas)")
+        print(" [3] CREADOR (Créditos de desarrollo del código)")
+        print(" [4] Salir de la Suite\n")
+        
+        try:
+            opcion = input("\033[1;32m[TRX-KILL-MENU]--> \033[0m")
+            if opcion == "1":
+                num = input("\n[+] Presiona el número (ej: 54911xxxxxxxx, sin + ni espacios): ")
+                rep_path
