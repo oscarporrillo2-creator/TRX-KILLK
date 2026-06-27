@@ -16,7 +16,7 @@ import urllib.parse
 from datetime import datetime
 from time import sleep
 
-# Configuración de rutas
+# Configuración de rutas internas
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
@@ -68,12 +68,8 @@ def obtener_coordenadas_pais(codigo_region):
     return coordenadas.get(codigo_region.upper(), "0.0000,0.0000")
 
 
-# ========================================================
-# NUEVO SUB-MÓDULO: RASTREO DE COINCIDENCIAS ABIERTAS (BARRIOS/FOROS)
-# ========================================================
 def buscar_rastros_web(numero_telefono):
     print(f"\n\033[1;34m[*] Escaneando indexaciones públicas para: {numero_telefono}...\033[0m")
-    
     query = f'"{numero_telefono}"'
     query_codificada = urllib.parse.quote_plus(query)
     url_completa = f"https://www.google.com/search?q={query_codificada}"
@@ -81,7 +77,6 @@ def buscar_rastros_web(numero_telefono):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    
     try:
         respuesta = requests.get(url_completa, headers=headers, timeout=10)
         if respuesta.status_code == 200:
@@ -94,7 +89,7 @@ def buscar_rastros_web(numero_telefono):
 
 
 # ========================================================
-# OPCIÓN 1: BÚSQUEDA EXTENDIDA Y AGREGADOS OSINT
+# OPCIÓN 1: BÚSQUEDA EXTENDIDA DE NÚMERO
 # ========================================================
 def modulo_lookup_numero():
     Clear.Screen.Clear()
@@ -111,17 +106,14 @@ def modulo_lookup_numero():
         print("\033[1;31m\n[!] El número ingresado no es válido estructuralmente.\033[0m")
         return
 
-    # Extracción de Datos Base
     pais = geocoder.country_name_for_number(Phone, "es")
     operadora = carrier.name_for_number(Phone, "es")
     region_code = phonenumbers.region_code_for_country_code(Phone.country_code)
     coordenadas_ip = obtener_coordenadas_pais(region_code)
     google_maps_link = f"https://www.google.com/maps?q={coordenadas_ip}"
     
-    # Ejecución del sub-módulo de rastreo web integrado
     link_auditoria = buscar_rastros_web(num)
     
-    # Formateo Consola
     print("\n\033[1;32m[+] DATOS EXTRAÍDOS DE FORMA EXITOSA:\033[0m")
     print(f"\033[1;36mMÓVIL:\033[0m +{num}")
     print(f"\033[1;36mPAÍS:\033[0m {pais} ({region_code})")
@@ -131,29 +123,69 @@ def modulo_lookup_numero():
     print(f"\033[1;36mGOOGLE MAP:\033[0m {google_maps_link}")
     print(f"\033[1;36mRASTROS EN WEB / BARRIOS:\033[0m {link_auditoria}")
     
-    # Guardado automático exigido
     reporte_path = os.path.join(BASE_DIR, "result-trx-kill.txt")
     try:
-        with open(reporte_path, "w", encoding="utf-8") as f:
-            f.write("=====================================================\n")
-            f.write("             TRX-KILL OSINT REPORT DATA              \n")
-            f.write("=====================================================\n")
+        with open(reporte_path, "a", encoding="utf-8") as f:
+            f.write("\n=====================================================\n")
             f.write(f"MÓVIL: +{num}\n")
-            f.write(f"PAÍS: {pais} ({region_code})\n")
-            f.write(f"OPERADORA: {operadora}\n")
-            f.write(f"CRÉDITOS DISPONIBLES: ILIMITADOS\n")
-            f.write(f"LONGITUD IP PAÍS: {coordenadas_ip}\n")
-            f.write(f"GOOGLE MAP: {google_maps_link}\n")
+            f.write(f"PAÍS: {pais} ({region_code}) | OPERADORA: {operadora}\n")
+            f.write(f"GOOGLE MAP PAÍS: {google_maps_link}\n")
             f.write(f"LINK AUDITORÍA REDES/BARRIO: {link_auditoria}\n")
-            f.write(f"FECHA DE CONSULTA: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=====================================================\n")
-        print(f"\033[1;33m\n[v] Reporte exportado a: {reporte_path}\033[0m")
+        print(f"\033[1;33m\n[v] Reporte guardado/actualizado en: {reporte_path}\033[0m")
     except Exception as e:
-        print(f"\033[1;31m\n[!] No se pudo guardar el archivo de resultados: {e}\033[0m")
+        print(f"\033[1;31m\n[!] No se pudo guardar el archivo: {e}\033[0m")
 
 
 # ========================================================
-# OPCIÓN 2: MÓDULO SIMULADOR SPAM-CALL
+# NUEVA OPCIÓN 2: GEOLOCALIZADOR REAL DE DIRECCIONES IP
+# ========================================================
+def localizar_ip_en_mapa():
+    Clear.Screen.Clear()
+    mostrar_banner_trx()
+    print("\033[1;34m[*] RECOLECTOR DE DATOS GEOGRÁFICOS POR IP [*]\033[0m\n")
+    ip_objetivo = input("\033[1;32m[+] Ingresa la dirección IP a rastrear: \033[0m")
+    
+    url = f"http://ip-api.com/json/{ip_objetivo}?fields=status,message,country,regionName,city,zip,lat,lon,isp"
+    
+    try:
+        print("\033[1;30m[*] Conectando con las bases de datos de redes locales...\033[0m")
+        sleep(0.5)
+        echo = requests.get(url, timeout=10)
+        datos = echo.json()
+        
+        if datos["status"] == "success":
+            lat = datos["lat"]
+            lon = datos["lon"]
+            mapa_url = f"https://www.google.com/maps?q={lat},{lon}"
+            
+            print("\n\033[1;32m[✓] DATOS DE RED ENCONTRADOS PARA LA IP:\033[0m")
+            print(f" \033[1;36mPAÍS:\033[0m {datos['country']}")
+            print(f" \033[1;36mPROVINCIA/ESTADO:\033[0m {datos['regionName']}")
+            print(f" \033[1;36mLOCALIDAD/CIUDAD:\033[0m {datos['city']}")
+            print(f" \033[1;36mCÓDIGO POSTAL:\033[0m {datos['zip'] if datos['zip'] else 'Oculto/Privado'}")
+            print(f" \033[1;36mPROVEEDOR INTERNET (ISP):\033[0m {datos['isp']}")
+            print(f" \033[1;36mCOORDS APROX BARRIO:\033[0m {lat}, {lon}")
+            print(f"\n\033[1;33m[+] LINK PARA ABRIR EN GOOGLE MAPS:\033[0m\n {mapa_url}")
+            
+            reporte_path = os.path.join(BASE_DIR, "result-trx-kill.txt")
+            with open(reporte_path, "a", encoding="utf-8") as f:
+                f.write("\n=====================================================\n")
+                f.write(f"RASTREO IP: {ip_objetivo}\n")
+                f.write(f"UBICACIÓN: {datos['city']}, {datos['regionName']}, {datos['country']}\n")
+                f.write(f"PROVEEDOR: {datos['isp']}\n")
+                f.write(f"MAPA DE COORDENADAS: {mapa_url}\n")
+                f.write("=====================================================\n")
+            print(f"\033[1;33m\n[v] Datos de IP agregados a: {reporte_path}\033[0m")
+        else:
+            print("\033[1;31m\n[!] La IP introducida es privada o el formato no existe.\033[0m")
+            
+    except Exception as e:
+        print(f"\033[1;31m\n[!] Error de conexión: {e}\033[0m")
+
+
+# ========================================================
+# OPCIÓN 3: SIMULADOR SPAM-CALL
 # ========================================================
 def modulo_spam_call():
     Clear.Screen.Clear()
@@ -171,13 +203,13 @@ def modulo_spam_call():
     
     for i in range(1, max_loops + 1):
         print(f"\033[1;33m[⚡] Enviando paquete VoIP Spoofing Caller ID #{i} -> ÉXITO\033[0m")
-        sleep(0.5)
+        sleep(0.4)
         
     print("\033[1;32m\n[✓] Ráfaga de llamadas completada de forma asíncrona.\033[0m")
 
 
 # ========================================================
-# OPCIÓN 5: LIMPIEZA TOTAL DE REGISTROS DE CONSULTA
+# OPCIÓN 6: LIMPIEZA TOTAL DE REGISTROS DE CONSULTA
 # ========================================================
 def eliminar_registros():
     Clear.Screen.Clear()
@@ -200,42 +232,46 @@ def eliminar_registros():
 
 
 # ========================================================
-# CONTROLADORES DE MENÚ
+# CONTROLADORES DE MENÚ PRINCIPAL V1.1.1
 # ========================================================
 if __name__ == "__main__":
     while True:
         Clear.Screen.Clear()
         mostrar_banner_trx()
-        print(" \033[1;31m[1]\033[0m SACAR INFORMACIÓN DEL NÚMERO (Mapas, IP, Rastros de Barrio)")
-        print(" \033[1;31m[2]\033[0m SPAM-CALL NÚMERO")
-        print(" \033[1;31m[3]\033[0m VERSION SCRIPT")
-        print(" \033[1;31m[4]\033[0m CREADOR")
-        print(" \033[1;31m[5]\033[0m ELIMINAR TODO LOS REGISTROS ENCONTRADO")
-        print(" [6] Salir de la Suite\n")
+        print(" \033[1;31m[1]\033[0m SACAR INFORMACIÓN DEL NÚMERO (Mapas, IP, Rastros)")
+        print(" \033[1;31m[2]\033[0m LOCALIZAR DIRECCIÓN IP EN EL MAPA (Localidad, ISP, Coords)")
+        print(" \033[1;31m[3]\033[0m SPAM-CALL NÚMERO")
+        print(" \033[1;31m[4]\033[0m VERSION SCRIPT")
+        print(" \033[1;31m[5]\033[0m CREADOR")
+        print(" \033[1;31m[6]\033[0m ELIMINAR TODO LOS REGISTROS ENCONTRADO")
+        print(" [7] Salir de la Suite\n")
         
         opcion = input("\033[1;32m[TRX-KILL-MENU]--> \033[0m")
         if opcion == "1":
             modulo_lookup_numero()
             input("\nPresiona Enter para regresar al menú...")
         elif opcion == "2":
-            modulo_spam_call()
+            localizar_ip_en_mapa()
             input("\nPresiona Enter para regresar al menú...")
         elif opcion == "3":
+            modulo_spam_call()
+            input("\nPresiona Enter para regresar al menú...")
+        elif opcion == "4":
             Clear.Screen.Clear()
             mostrar_banner_trx()
             print("\033[1;36m [+] VERSIÓN ACTUAL DEL SCRIPT: 1.1.1\033[0m")
             print("\033[1;32m [+] ESTADO: Estable / Parches de localización Funcionales (2026)\033[0m")
             input("\nPresiona Enter para regresar al menú...")
-        elif opcion == "4":
+        elif opcion == "5":
             Clear.Screen.Clear()
             mostrar_banner_trx()
             print("\033[1;35m [+] CREADOR OFICIAL: TRX-LILL\033[0m")
             print("\033[1;34m [+] PERFIL: https://github.com/oscarporrillo2-creator\033[0m")
             input("\nPresiona Enter para regresar al menú...")
-        elif opcion == "5":
+        elif opcion == "6":
             eliminar_registros()
             input("\nPresiona Enter para regresar al menú...")
-        elif opcion == "6":
+        elif opcion == "7":
             print("\n\033[1;31m[-] Cerrando TRX-KILL...\033[0m")
             break
         else:
