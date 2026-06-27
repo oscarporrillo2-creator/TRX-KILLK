@@ -15,8 +15,6 @@ from time import sleep
 # ========================================================
 # CONFIGURACIÓN DE RUTAS EN EL REPOSITORIO
 # ========================================================
-# Esto asegura que Python encuentre la carpeta 'Core' sin importar
-# la profundidad de directorios desde donde el usuario invoque el comando.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
@@ -59,13 +57,13 @@ def mostrar_banner_trx():
 class Phony:
 
     @staticmethod
-    def Number(num, report, code, Mode, Type, username):
+    def Number(num, report, code="", Mode="", Type="", username=""):
         phoneList = []
         Clear.Screen.Clear()
         mostrar_banner_trx()
         
         print(Font.Color.GREEN + "[+]" + Font.Color.WHITE + " TRX-KILL ENGINE: ANALIZANDO IDENTIFICADOR: +{}".format(num))
-        sleep(2)
+        sleep(1)
         FormattedPhoneNumber = "+" + num
         
         try:
@@ -180,7 +178,7 @@ class TrxKillScanner:
                 is_scrapable = sites[data1]["Scrapable"]
                 Tag = sites[data1]["Tag"]
                 
-                print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + f" Buscando registros en: {name}")
+                print(Font.Color.GREEN + "[+]" + Font.Color.WHITE + f" Buscando registros en: {name}")
                 
                 alert = "CORRECT"
                 for errors in exception_char:
@@ -189,7 +187,7 @@ class TrxKillScanner:
                         break
                 
                 if alert == "NOT-CORRECT":
-                    print(Font.Color.YELLOW + "[U]" + Font.Color.WHITE + " Sintaxis no admitida para este dominio.")
+                    pass
                 else:
                     try:
                         Requests_Search.Search.search(error, report, site1, site2, http_proxy, sites, data1, username,
@@ -198,7 +196,7 @@ class TrxKillScanner:
                         pass
 
     @staticmethod
-    def search(username, Mode):
+    def search(username, Mode=""):
         successfull = []
         successfullName = []
         ScraperSites = []
@@ -216,7 +214,8 @@ class TrxKillScanner:
         now = datetime.now()
         dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
         
-        choice = int(input(Font.Color.BLUE + "[+]" + Font.Color.WHITE + " ¿Utilizar enrutamiento Proxy? (1=Sí / 2=No): "))
+        print(Font.Color.BLUE + "[?]" + Font.Color.WHITE + " ¿Utilizar enrutamiento Proxy? (1=Sí / 2=No)")
+        choice = int(input("\033[1;32m[TRX-KILL]--> \033[0m"))
         http_proxy = None
         http_proxy2 = "None"
         
@@ -231,34 +230,9 @@ class TrxKillScanner:
             f.write(f"TRX-KILL REPORT RUNNING ON: {dt_string}\n")
             f.write(f"TARGET USERNAME: {username}\n\n")
 
-        print(Font.Color.BLUE + "\n[+]" + Font.Color.WHITE + " SELECCIONE MODO:\n (1) Escaneo de Perfiles en Redes\n (2) Extracción Avanzada de Fuentes")
-        opt = int(input("\n \033[1;32m[TRX-KILL]--> \033[0m"))
+        nomefile = os.path.join(BASE_DIR, "Site_lists/Username/site_list.json")
+        TrxKillScanner.Controll(username, nomefile, "Identificador Local", report, "USERNAME", successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags)
         
-        if opt == 1:
-            nomefile = os.path.join(BASE_DIR, "Site_lists/Username/site_list.json")
-            TrxKillScanner.Controll(username, nomefile, "Identificador Local", report, "USERNAME", successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags)
-            
-            print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " Análisis de presencia digital completado para: " + username)
+        print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " Análisis de presencia digital completado para: " + username)
+        if len(successfull) > 0:
             for names in successfull:
-                print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + f" Encontrado: {names}")
-
-# ========================================================
-# EJECUCIÓN DIRECTA (MENU PRINCIPAL DE PRUEBA)
-# ========================================================
-if __name__ == "__main__":
-    Clear.Screen.Clear()
-    mostrar_banner_trx()
-    print(" [1] Módulo de Análisis Telefónico (Phony)")
-    print(" [2] Módulo de Rastreo de Nombres de Usuario (TrxKillScanner)")
-    print(" [3] Salir\n")
-    try:
-        opcion = input("\033[1;32m[TRX-KILL-MENU]--> \033[0m")
-        if opcion == "1":
-            num = input("\n[+] Ingresa el número (sin + ni espacios): ")
-            rep_path = os.path.join(BASE_DIR, "phone_report.txt")
-            Phony.Number(num, rep_path, "", "", "", "")
-        elif opcion == "2":
-            user = input("\n[+] Ingresa el nombre de usuario a buscar: ")
-            TrxKillScanner.search(user, "")
-    except KeyboardInterrupt:
-        print("\n\n[-] Saliendo...")
