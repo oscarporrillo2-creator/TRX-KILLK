@@ -5,7 +5,6 @@
 # VERSION: 1.5.2
 # YEAR: 2026
 # License: GNU General Public License v3.0
-#OPO:PYA
 # ========================================================
 
 import os
@@ -68,11 +67,11 @@ def modulo_lookup_numero():
         region_code = phonenumbers.region_code_for_country_code(Phone.country_code)
         coords = obtener_coordenadas_pais(region_code)
         
-        print(f"\nMOVIL: +{num}")
-        print(f"COORDENADAS: {coords}")
-        print(f"OPERADOR: {operadora}")
-        print(f"GOOGLE MAP: https://www.google.com/maps?q={coords}")
-        print(f"TIPO DE WIFI: N/A")
+        print(f"\n\033[1;36mMOVIL:\033[0m +{num}")
+        print(f"\033[1;36mCOORDENADAS:\033[0m {coords}")
+        print(f"\033[1;36mOPERADOR:\033[0m {operadora}")
+        print(f"\033[1;36mGOOGLE MAP:\033[0m https://www.google.com/maps?q={coords}")
+        print(f"\033[1;36mTIPO DE WIFI:\033[0m N/A")
     except:
         print("\033[1;31m\n[!] Error en el número.\033[0m")
 
@@ -83,8 +82,8 @@ def modulo_lookup_numero():
 def modulo_information_ubicacion():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    print(f"SISTEMA: {os.name}")
-    print(f"USUARIO: {os.getlogin() if hasattr(os, 'getlogin') else 'Termux'}")
+    print(f"\033[1;36mSISTEMA:\033[0m {os.name}")
+    print(f"\033[1;36mUSUARIO:\033[0m {os.getlogin() if hasattr(os, 'getlogin') else 'Termux'}")
 
 
 # ========================================================
@@ -93,14 +92,14 @@ def modulo_information_ubicacion():
 def modulo_porr_scanner():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    target = input("[+] IP a escanear: ")
+    target = input("\033[1;32m[+] IP a escanear: \033[0m")
     for port in [21, 22, 80, 443]:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(0.5)
         if s.connect_ex((target, port)) == 0:
-            print(f"[*] Puerto {port}: ABIERTO")
+            print(f"\033[1;32m[*] Puerto {port}: ABIERTO\033[0m")
         else:
-            print(f"[-] Puerto {port}: CERRADO")
+            print(f"\033[1;31m[-] Puerto {port}: CERRADO\033[0m")
 
 
 # ========================================================
@@ -109,8 +108,8 @@ def modulo_porr_scanner():
 def modulo_creador():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    print("CREADOR: TRX-LILL")
-    print("REPOSITORIO: https://github.com/oscarporrillo2-creator")
+    print("\033[1;35mCREADOR: TRX-LILL\033[0m")
+    print("\033[1;34mREPOSITORIO: https://github.com/oscarporrillo2-creator\033[0m")
 
 
 # ========================================================
@@ -119,34 +118,34 @@ def modulo_creador():
 def modulo_version():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    print("VERSIÓN: 1.5.2")
+    print("\033[1;36mVERSIÓN: 1.5.2\033[0m")
 
 
 # ========================================================
-# OPCIÓN 6: LICENCIA Y DERECHOS DE AUTOR
+# OPCIÓN 6: LICENCIA
 # ========================================================
 def modulo_licencia():
     Clear.Screen.Clear()
     mostrar_banner_trx()
-    print("LICENCIA: GNU General Public License v3.0")
-    print("RESPONSABILIDAD: Uso bajo criterio del usuario.")
+    print("\033[1;33mLICENCIA: GNU General Public License v3.0\033[0m")
+    print("\033[1;31mRESPONSABILIDAD: Uso bajo criterio del usuario.\033[0m")
 
 
 # ========================================================
-# CONTROLADORES DE MENÚ PRINCIPAL
+# CONTROLADORES DE MENÚ
 # ========================================================
 if __name__ == "__main__":
     while True:
         Clear.Screen.Clear()
         mostrar_banner_trx()
-        print(" 1) INFO-NUMERO")
-        print(" 2) INFORMACIÓN DEL DISPOSITIVO")
-        print(" 3) PORR-SCANNER")
-        print(" 4) CREADOR")
-        print(" 5) VERSIÓN")
-        print(" 6) LICENCIA Y DERECHOS DE AUTOR Y RESPONSABILIDAD")
-        print(" 7) UPDATE")
-        print(" 0) Salir\n")
+        print("\033[1;31m [1]\033[0m INFO-NUMERO")
+        print("\033[1;31m [2]\033[0m INFORMACIÓN DEL DISPOSITIVO")
+        print("\033[1;31m [3]\033[0m PORR-SCANNER")
+        print("\033[1;31m [4]\033[0m CREADOR")
+        print("\033[1;31m [5]\033[0m VERSIÓN")
+        print("\033[1;31m [6]\033[0m LICENCIA Y DERECHOS")
+        print("\033[1;31m [7]\033[0m UPDATE")
+        print("\033[1;31m [0]\033[0m Salir\n")
         
         opcion = input("\033[1;32m[TRX-KILL-MENU]--> \033[0m")
         if opcion == "1": modulo_lookup_numero(); input("\nPresiona Enter...")
@@ -155,5 +154,5 @@ if __name__ == "__main__":
         elif opcion == "4": modulo_creador(); input("\nPresiona Enter...")
         elif opcion == "5": modulo_version(); input("\nPresiona Enter...")
         elif opcion == "6": modulo_licencia(); input("\nPresiona Enter...")
-        elif opcion == "7": print("\nBuscando..."); sleep(1)
+        elif opcion == "7": print("\n\033[1;33mBuscando...\033[0m"); sleep(1)
         elif opcion == "0": break
