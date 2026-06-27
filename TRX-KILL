@@ -5,6 +5,7 @@
 # VERSION: 1.5.2
 # YEAR: 2026
 # License: GNU General Public License v3.0
+#OPO:PYA
 # ========================================================
 
 import os
