@@ -7,11 +7,15 @@
 # ========================================================
 
 import os
+import sys
 import json
 import urllib
 import re
 from datetime import datetime
 from time import sleep
+
+# PARCHE DE RUTA: Fuerza a Python a buscar en la carpeta actual los módulos 'Core'
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Dependencias del framework base
 import phonenumbers
