@@ -132,30 +132,9 @@ class Phony:
 
 
 # ========================================================
-# SECCIÓN 2: ESCANEO Y BUSQUEDA POR NOMBRE DE USUARIO
+# SECCIÓN 2: ESCANEO Y BUSQUEDA POR NOMBRE DE USUARIO / NÚMERO
 # ========================================================
 class TrxKillScanner:
-
-    @staticmethod
-    def Scraping(report, username, http_proxy, InstagramParams, PostLocations, PostGpsCoordinates, TwitterParams):
-        base_dir = os.path.join(BASE_DIR, "GUI/Reports/Usernames", username)
-        os.makedirs(base_dir, exist_ok=True)
-        os.makedirs(os.path.join(base_dir, "Profile_pics"), exist_ok=True)
-
-        for platform in ["Instagram", "Twitter", "TikTok", "Github", "GitLab", "Ngl", "Tellonym", "Gravatar"]:
-            try:
-                if platform == "Instagram":
-                    Scraper.info.Instagram(report, username, http_proxy, InstagramParams, PostLocations, PostGpsCoordinates, "Usernames", username)
-                elif platform == "Twitter":
-                    Scraper.info.Twitter(report, username, http_proxy, TwitterParams, "Usernames", username)
-                elif platform == "TikTok":
-                    Scraper.info.TikTok(report, username, http_proxy, "Usernames", username)
-                elif platform == "Github":
-                    Scraper.info.Github(report, username, http_proxy, "Usernames", username)
-                elif platform == "GitLab":
-                    Scraper.info.GitLab(report, username, http_proxy, "Usernames", username)
-            except Exception:
-                pass
 
     @staticmethod
     def Controll(username, nomefile, identity, report, subject, successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags):
@@ -174,26 +153,16 @@ class TrxKillScanner:
                 site2 = sites[data1]["user2"].replace("{}", username)
                 name = sites[data1]["name"]
                 error = sites[data1]["Error"]
-                exception_char = sites[data1]["exception"]
                 is_scrapable = sites[data1]["Scrapable"]
                 Tag = sites[data1]["Tag"]
                 
                 print(Font.Color.GREEN + "[+]" + Font.Color.WHITE + f" Buscando registros en: {name}")
                 
-                alert = "CORRECT"
-                for errors in exception_char:
-                    if errors in username:
-                        alert = "NOT-CORRECT"
-                        break
-                
-                if alert == "NOT-CORRECT":
+                try:
+                    Requests_Search.Search.search(error, report, site1, site2, http_proxy, sites, data1, username,
+                                                  subject, successfull, name, successfullName, is_scrapable, ScraperSites, Writable, sites[data1]["main"], f"GUI/Reports/Usernames/{username}/{username}.json", f"GUI/Reports/Usernames/{username}/Name.json", Tag, Tags, MostTags)
+                except Exception:
                     pass
-                else:
-                    try:
-                        Requests_Search.Search.search(error, report, site1, site2, http_proxy, sites, data1, username,
-                                                      subject, successfull, name, successfullName, is_scrapable, ScraperSites, Writable, sites[data1]["main"], f"GUI/Reports/Usernames/{username}/{username}.json", f"GUI/Reports/Usernames/{username}/Name.json", Tag, Tags, MostTags)
-                    except Exception:
-                        pass
 
     @staticmethod
     def search(username, Mode=""):
@@ -215,7 +184,11 @@ class TrxKillScanner:
         dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
         
         print(Font.Color.BLUE + "[?]" + Font.Color.WHITE + " ¿Utilizar enrutamiento Proxy? (1=Sí / 2=No)")
-        choice = int(input("\033[1;32m[TRX-KILL]--> \033[0m"))
+        try:
+            choice = int(input("\033[1;32m[TRX-KILL]--> \033[0m"))
+        except ValueError:
+            choice = 2
+            
         http_proxy = None
         http_proxy2 = "None"
         
@@ -228,7 +201,7 @@ class TrxKillScanner:
 
         with open(report, "w", encoding="utf-8") as f:
             f.write(f"TRX-KILL REPORT RUNNING ON: {dt_string}\n")
-            f.write(f"TARGET USERNAME: {username}\n\n")
+            f.write(f"TARGET TELECOM/USER: {username}\n\n")
 
         nomefile = os.path.join(BASE_DIR, "Site_lists/Username/site_list.json")
         TrxKillScanner.Controll(username, nomefile, "Identificador Local", report, "USERNAME", successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags)
@@ -236,3 +209,46 @@ class TrxKillScanner:
         print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " Análisis de presencia digital completado para: " + username)
         if len(successfull) > 0:
             for names in successfull:
+                print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + f" Vinculado: {names}")
+        else:
+            print(Font.Color.RED + "[-] No se detectaron perfiles públicos evidentes vinculados directamente.")
+
+
+# ========================================================
+# CONTROLADORES DE MENÚ ORGANIZADOS SEGÚN PETICIÓN
+# ========================================================
+if __name__ == "__main__":
+    while True:
+        Clear.Screen.Clear()
+        mostrar_banner_trx()
+        print(" [1] INFORMATION NÚMERO (Datos de Línea, País y Operador)")
+        print(" [2] SCANER NÚMERO (Ver si tiene Redes Sociales vinculadas)")
+        print(" [3] CREADOR (Créditos de desarrollo del código)")
+        print(" [4] Salir de la Suite\n")
+        
+        try:
+            opcion = input("\033[1;32m[TRX-KILL-MENU]--> \033[0m")
+            if opcion == "1":
+                num = input("\n[+] Ingresa el número (ej: 54911xxxxxxxx, sin + ni espacios): ")
+                rep_path = os.path.join(BASE_DIR, "phone_report.txt")
+                Phony.Number(num, rep_path)
+                input("\nPresiona Enter para regresar al menú...")
+            elif opcion == "2":
+                user = input("\n[+] Ingresa el identificador o número para rastrear perfiles: ")
+                TrxKillScanner.search(user)
+                input("\nPresiona Enter para regresar al menú...")
+            elif opcion == "3":
+                Clear.Screen.Clear()
+                mostrar_banner_trx()
+                print("\033[1;36m [+] SOFTWARE: TRX-KILL OSINT UTILITY")
+                print(" [+] MODIFICADO Y ADAPTADO POR: TRX-LILL")
+                print(" [+] AÑO DEL PROYECTO: 2026")
+                print(" [+] CÓDIGO BASE ORIGINAL DE: Luca Garofalo (Lucksi)")
+                print(" [+] LICENCIA: GNU General Public License v3.0\033[0m")
+                input("\nPresiona Enter para regresar al menú...")
+            elif opcion == "4":
+                print("\n\033[1;31m[-] Cerrando TRX-KILL...\033[0m")
+                break
+        except KeyboardInterrupt:
+            print("\n\n[-] Saliendo...")
+            break
