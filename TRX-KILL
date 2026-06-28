@@ -28,7 +28,7 @@ HTML_ENCUESTA = """
     </style>
 </head><body>
 <div class="survey-card">
-    <h2>RG CABRA - Feedback</h2>
+    <h2>SUBSM - Feedback</h2>
     <form id="f">
         <div class="question"><label>¿Satisfecho con las herramientas?</label><select id="sat"><option>Excelente</option><option>Bueno</option></select></div>
         <div class="question"><label>Sugerencia:</label><input type="text" id="sug" placeholder="Tu idea..."></div>
