@@ -1,4 +1,3 @@
-python
 import os, time, sys, getpass
 from flask import Flask, request
 
@@ -44,24 +43,13 @@ def banner():
     print(f"{G}    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║{W}")
     print(f"{G}    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}")
 
-def animar(texto):
-    for char in texto:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(0.02)
-    print()
-
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--adm":
         pwd = getpass.getpass(f"{R}PASSWORD:{W} ")
         if pwd == AUTH_PASS:
-            print(f"{G}[+] ACCESO CONCEDIDO{W}")
-            if os.path.exists("result.txt"):
-                os.system("cat result.txt")
-            else:
-                animar(f"{Y}No se encontraron registros.{W}")
-        else:
-            print(f"{R}ACCESO DENEGADO{W}")
+            if os.path.exists("result.txt"): os.system("cat result.txt")
+            else: print("Sin registros.")
+        else: print(f"{R}DENEGADO{W}")
         return
 
     while True:
@@ -73,16 +61,16 @@ def main():
         sel = input(f"\n{Y}TRX-ROOT > {W}")
         
         if sel == "1":
-            input(f"\n{Y}MÓVIL:{W} Analizando cobertura... (Presiona Enter para volver)")
+            input(f"\n{Y}MÓVIL:{W} Analizando cobertura... (Enter para volver)")
         elif sel == "2":
-            os.system(f"fuser -k {PORT}/tcp > /dev/null 2>&1")
+            print(f"\n{C}Servidor iniciado en http://127.0.0.1:{PORT}{W}")
             app.run(port=PORT, host='127.0.0.1')
         elif sel == "3":
             print(f"\n{C}CREADOR:{W} OSCAR"); input()
         elif sel == "4":
             print(f"\n{C}LICENCIA:{W} PRIVADA | {C}USO:{W} EDUCATIVA 1.2.3"); input()
         elif sel == "5":
-            animar(f"{G}Actualizando... Sistema al día.{W}"); input()
+            print(f"\n{G}Sistema al día.{W}"); input()
         elif sel == "6":
             pwd = getpass.getpass(f"{R}CONTRASEÑA:{W} ")
             if pwd == AUTH_PASS:
