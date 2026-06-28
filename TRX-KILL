@@ -117,9 +117,10 @@ def main():
         elif opc == "7":
             target = input("IP a analizar: ")
             try:
-                res = requests.get(f"https://ipapi.co/{target}/json/").json()
-                print(f"\n{res}")
-            except: print("Error.")
+                # Cambiado a ip-api.com para evitar bloqueos
+                res = requests.get(f"http://ip-api.com/json/{target}").json()
+                print(f"\n[+] PAÍS: {res.get('country')}\n[+] CIUDAD: {res.get('city')}\n[+] ISP: {res.get('isp')}")
+            except: print("Error de conexión.")
             input("\n[Enter] volver...")
 
         #------OPCION8-------
