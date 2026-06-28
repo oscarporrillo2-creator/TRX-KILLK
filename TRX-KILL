@@ -13,7 +13,6 @@ import re
 from time import sleep
 from datetime import datetime
 
-# Diccionario completo de prefijos internacionales
 PREFIJOS_PAISES = {
     "América Latina y Caribe": {
         "Argentina": "54", "Bolivia": "591", "Brasil": "55", "Chile": "56", "Colombia": "57",
@@ -25,13 +24,6 @@ PREFIJOS_PAISES = {
         "Estados Unidos / Canadá": "1", "España": "34", "Francia": "33", "Alemania": "49", 
         "Italia": "39", "Reino Unido": "44", "Portugal": "351", "Países Bajos": "31", 
         "Bélgica": "32", "Suiza": "41", "Rusia": "7"
-    },
-    "Asia y Oceanía": {
-        "China": "86", "Japón": "81", "Corea del Sur": "82", "India": "91", "Israel": "972",
-        "Arabia Saudita": "966", "Australia": "61", "Nueva Zelanda": "64", "Filipinas": "63"
-    },
-    "África": {
-        "Sudáfrica": "27", "Egipto": "20", "Nigeria": "234", "Marruecos": "212", "Argelia": "213"
     }
 }
 
@@ -61,10 +53,15 @@ def menu_codigos_pais():
     return opciones.get(eleccion, "")
 
 def guardar_reportes(datos, num_limpio):
-    # Ruta local de almacenamiento dentro de la carpeta clonada
-    carpeta_salida = "Resultados_TRX"
+    carpeta_salida = "/storage/emulated/0/COMANDO TRX-KILL/USED TERMUX NO MÓDICAR/Resultados_TRX"
     if not os.path.exists(carpeta_salida):
-        os.makedirs(carpeta_salida)
+        try:
+            os.makedirs(carpeta_salida)
+        except Exception:
+            # Fallback en caso de problemas con permisos en almacenamiento emulado externo
+            carpeta_salida = os.path.expanduser("~/Resultados_TRX")
+            if not os.path.exists(carpeta_salida):
+                os.makedirs(carpeta_salida)
     
     id_archivo = num_limpio.replace("+", "")
     ruta_txt = os.path.join(carpeta_salida, f"reporte_{id_archivo}.txt")
@@ -78,14 +75,13 @@ def guardar_reportes(datos, num_limpio):
     with open(ruta_json, "w", encoding="utf-8") as f:
         json.dump(datos, f, indent=4, ensure_ascii=False)
         
-    print(f"\n\033[1;32m[+]\033[0m Reportes guardados con éxito en la carpeta local:\n    \033[1;36m-> {ruta_txt}\033[0m")
+    print(f"\n\033[1;32m[+]\033[0m Reportes guardados en la carpeta de origen:\n    \033[1;36m-> {ruta_txt}\033[0m")
 
 def buscar_numero():
     mostrar_banner()
     entrada = input("\033[1;32m[?]\033[0m Introduce el número de teléfono: ").strip()
     num_limpio = re.sub(r'[^\d]', '', entrada)
 
-    # Si meten un número corto, asiste con el menú de prefijos
     if len(num_limpio) < 10:
         codigo = menu_codigos_pais()
         if codigo:
@@ -109,7 +105,7 @@ def buscar_numero():
             for p, c in paises.items():
                 todos_los_prefijos.append((p, c))
         
-        # Ordenamos descendente para que busque prefijos de 3 o 4 dígitos primero
+        # Ordenamos por longitud de prefijo descendente
         todos_los_prefijos.sort(key=lambda x: len(x[1]), reverse=True)
         
         for p, c in todos_los_prefijos:
