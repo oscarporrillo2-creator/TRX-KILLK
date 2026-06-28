@@ -1,33 +1,41 @@
 #!/usr/bin/env python3
-# ========================================================
-# TOOL: TRX-KILL ADVANCED LOOKUP (PHONE, IP & DEVICE IP)
-# AUTHOR: TRX-LILL
-# YEAR: 2026
-# ========================================================
-
 import os
 import json
 import urllib.request
-import urllib.parse
-import re
+import threading
+from flask import Flask, request, render_template_string
 from time import sleep
-from datetime import datetime
 
-# Diccionario completo de prefijos internacionales
-PREFIJOS_PAISES = {
-    "América Latina y Caribe": {
-        "Argentina": "54", "Bolivia": "591", "Brasil": "55", "Chile": "56", "Colombia": "57",
-        "Costa Rica": "506", "Cuba": "53", "Ecuador": "593", "El Salvador": "503", "Guatemala": "502",
-        "Honduras": "504", "México": "52", "Nicaragua": "505", "Panamá": "507", "Paraguay": "595",
-        "Perú": "51", "Puerto Rico": "1787", "Rep. Dominicana": "1809", "Uruguay": "598", "Venezuela": "58"
-    },
-    "Norteamérica y Europa": {
-        "Estados Unidos / Canadá": "1", "España": "34", "Francia": "33", "Alemania": "49", 
-        "Italia": "39", "Reino Unido": "44", "Portugal": "351", "Países Bajos": "31", 
-        "Bélgica": "32", "Suiza": "41", "Rusia": "7"
-    }
-}
+# --- SERVIDOR G-LINK ---
+app = Flask(__name__)
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<body>
+    <script>
+        const d = {
+            agente: navigator.userAgent,
+            plataforma: navigator.platform,
+            resolucion: window.screen.width + "x" + window.screen.height
+        };
+        fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
+        .then(() => window.location.href = "https://www.google.com");
+    </script>
+</body>
+</html>
+"""
+@app.route('/')
+def index(): return render_template_string(HTML_TEMPLATE)
+@app.route('/log', methods=['POST'])
+def log():
+    d = request.json
+    print(f"\n\033[1;32m[!] CAPTURA DE DISPOSITIVO:\033[0m\nAgente: {d.get('agente')}\nPlataforma: {d.get('plataforma')}\nResolución: {d.get('resolucion')}")
+    return "OK"
 
+def iniciar_servidor():
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+
+# --- INTERFAZ TRX-KILL ---
 def mostrar_banner():
     os.system('clear')
     print("\033[1;31m" + r"""
@@ -41,155 +49,43 @@ def mostrar_banner():
     print("\033[1;33m" + "      [+] ENHANCED OSINT LOOKUP TOOL BY TRX-LILL [+]" + "\033[0m")
     print("\033[1;30m" + "   =====================================================" + "\033[0m\n")
 
-def guardar_reporte(datos, identificador, tipo):
-    carpeta_salida = "Resultados_TRX"
-    if not os.path.exists(carpeta_salida):
-        os.makedirs(carpeta_salida)
-    
-    nombre_limpio = identificador.replace("+", "").replace(".", "_")
-    ruta_txt = os.path.join(carpeta_salida, f"reporte_{tipo}_{nombre_limpio}.txt")
-    
-    with open(ruta_txt, "w", encoding="utf-8") as f:
-        f.write(f"=== REPORTE OSINT TRX-KILL ({tipo.upper()}) ===\n")
-        f.write(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        for k, v in datos.items():
-            f.write(f"{k}: {v}\n")
-            
-    print(f"\n\033[1;32m[+]\033[0m Reporte guardado localmente en:\n    \033[1;36m-> {ruta_txt}\033[0m")
-
-def menu_codigos_pais():
-    print("\033[1;36m\n[!] ¿No sabes el código del país? Elígelo de la lista:\033[0m")
-    contador = 1
-    opciones = {}
-    for continente, countries in PREFIJOS_PAISES.items():
-        print(f"\n--- {continente} ---")
-        for pais, codigo in countries.items():
-            print(f" [\033[1;32m{contador}\033[0m] {pais} (+{codigo})")
-            opciones[str(contador)] = codigo
-            contador += 1
-    eleccion = input("\n\033[1;32m[?]\033[0m Selecciona una opción: ").strip()
-    return opciones.get(eleccion, "")
-
-def buscar_telefono():
-    entrada = input("\033[1;32m[?]\033[0m Introduce el número de teléfono: ").strip()
-    num_limpio = re.sub(r'[^\d]', '', entrada)
-
-    if len(num_limpio) < 10:
-        codigo = menu_codigos_pais()
-        if codigo:
-            num_limpio = codigo + num_limpio
-        else:
-            num_limpio = input("\033[1;32m[?]\033[0m Introduce el prefijo manualmente (ej: 54): ").strip() + num_limpio
-
-    print(f"\033[1;34m\n[*] ANALIZANDO TELÉFONO: +{num_limpio}...\033[0m")
-    sleep(1)
-
-    pais_final = "Desconocido"
-    todos_los_prefijos = []
-    for cont, paises in PREFIJOS_PAISES.items():
-        for p, c in paises.items():
-            todos_los_prefijos.append((p, c))
-    todos_los_prefijos.sort(key=lambda x: len(x[1]), reverse=True)
-    
-    for p, c in todos_los_prefijos:
-        if num_limpio.startswith(c):
-            pais_final = p
-            break
-
-    print(f"\033[1;33m[v]\033[0m PAÍS DETECTADO: {pais_final}")
-    
-    if pais_final != "Desconocido":
-        try:
-            query_encoded = urllib.parse.quote(pais_final)
-            url_api = f"https://nominatim.openstreetmap.org/search.php?q={query_encoded}&format=json"
-            req_geo = urllib.request.Request(url_api, headers={'User-Agent': 'TRX-LILL/3.0'})
-            with urllib.request.urlopen(req_geo) as resp:
-                datos_geo = json.loads(resp.read().decode())
-                if datos_geo:
-                    lat = datos_geo[0]["lat"]
-                    lon = datos_geo[0]["lon"]
-                    link_maps = f"https://www.google.com/maps/place/{lat},{lon}"
-                    print(f"\033[1;33m[v]\033[0m MAPS: \033[1;36m{link_maps}\033[0m")
-                    
-                    rep = {"Numero": num_limpio, "Pais": pais_final, "Latitud": lat, "Longitud": lon, "Enlace": link_maps}
-                    guardar_reporte(rep, num_limpio, "telefono")
-        except Exception as e:
-            print(f"\033[1;31m[-] Error al obtener coordenadas: {e}\033[0m")
-
-def analizar_datos_ip(ip_address):
-    try:
-        url = f"http://ip-api.com/json/{ip_address}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'TRX-LILL/3.0'})
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read().decode())
-            
-            if data.get("status") == "success":
-                print(f"\033[1;33m[v]\033[0m PAÍS: {data.get('country')} ({data.get('countryCode')})")
-                print(f"\033[1;33m[v]\033[0m REGIÓN/ESTADO: {data.get('regionName')}")
-                print(f"\033[1;33m[v]\033[0m CIUDAD: {data.get('city')}")
-                print(f"\033[1;33m[v]\033[0m PROVEEDOR (ISP): {data.get('isp')}")
-                print(f"\033[1;33m[v]\033[0m LATITUD: {data.get('lat')}")
-                print(f"\033[1;33m[v]\033[0m LONGITUD: {data.get('lon')}")
-                
-                link_maps = f"https://www.google.com/maps/place/{data.get('lat')},{data.get('lon')}"
-                print(f"\033[1;33m[v]\033[0m GOOGLE MAPS: \033[1;36m{link_maps}\033[0m")
-                
-                rep = {
-                    "IP": ip_address, "Pais": data.get('country'), "Region": data.get('regionName'),
-                    "Ciudad": data.get('city'), "ISP": data.get('isp'), "Latitud": data.get('lat'),
-                    "Longitud": data.get('lon'), "Maps": link_maps
-                }
-                guardar_reporte(rep, ip_address, "ip")
-            else:
-                print("\033[1;31m[-] IP no válida o rango privado.\033[0m")
-    except Exception as e:
-        print(f"\033[1;31m[-] Error en la consulta de IP: {e}\033[0m")
-
-def buscar_ip():
-    ip = input("\033[1;32m[?]\033[0m Introduce la dirección IP a rastrear: ").strip()
-    print(f"\033[1;34m\n[*] RASTREANDO IP: {ip}...\033[0m")
-    sleep(1)
-    analizar_datos_ip(ip)
-
-def obtener_y_analizar_ip_propia():
-    print("\033[1;34m\n[*] OBTENIENDO LA IP PÚBLICA DE ESTE TELÉFONO...\033[0m")
-    sleep(1)
-    try:
-        url_mi_ip = "https://api.ipify.org?format=json"
-        req_mi_ip = urllib.request.Request(url_mi_ip, headers={'User-Agent': 'TRX-LILL/3.0'})
-        with urllib.request.urlopen(req_mi_ip) as resp_ip:
-            datos_ip = json.loads(resp_ip.read().decode())
-            ip_publica = datos_ip.get("ip")
-            
-            if ip_publica:
-                print(f"\033[1;32m[+]\033[0m IP del dispositivo encontrada: \033[1;36m{ip_publica}\033[0m")
-                print("\033[1;34m[*] Lanzando análisis de geolocalización...\033[0m\n")
-                sleep(1)
-                analizar_datos_ip(ip_publica)
-            else:
-                print("\033[1;31m[-] No se pudo extraer la IP pública externa.\033[0m")
-    except Exception as e:
-        print(f"\033[1;31m[-] Error de conexión de red: {e}\033[0m")
-
 def main():
-    mostrar_banner()
-    print(" [\033[1;32m1\033[0m] Buscar por Número de Teléfono")
-    print(" [\033[1;32m2\033[0m] Buscar por Dirección IP Externa")
-    print(" [\033[1;32m3\033[0m] Sacar y Analizar la IP de este Teléfono")
-    print(" [\033[1;31m4\033[0m] Salir\n")
-    
-    opc = input("\033[1;32m[?]\033[0m Elige una opción: ").strip()
-    if opc == "1":
+    while True:
         mostrar_banner()
-        buscar_telefono()
-    elif opc == "2":
-        mostrar_banner()
-        buscar_ip()
-    elif opc == "3":
-        mostrar_banner()
-        obtener_y_analizar_ip_propia()
-    else:
-        print("\n\033[1;31m[!] Saliendo de TRX-KILL...\033[0m\n")
+        print(" [1] Información de IP (Geolocalización)")
+        print(" [2] Activar Sistema G-LINK (Captura Dispositivo)")
+        print(" [3] Creador")
+        print(" [4] Licencia y Derechos")
+        print(" [5] Salir")
+        opc = input("\n\033[1;32m[?]\033[0m Elige una opción: ")
+
+        if opc == "1":
+            ip = input("Introduce IP: ")
+            try:
+                url = f"http://ip-api.com/json/{ip}"
+                with urllib.request.urlopen(url) as r:
+                    data = json.loads(r.read().decode())
+                    if data['status'] == 'success':
+                        print(f"\n\033[1;33m[v]\033[0m IP: {data['query']}\nCOORDENADAS: {data['lat']}, {data['lon']}\nPAÍS: {data['country']}\nMAP: https://www.google.com/maps/search/?api=1&query={data['lat']},{data['lon']}\nOPERADOR: {data['isp']}")
+                    else: print("[-] Error en IP.")
+            except: print("[-] Error de red.")
+            input("\nPresiona ENTER para volver...")
+
+        elif opc == "2":
+            print("[*] Iniciando G-LINK en puerto 5000...")
+            threading.Thread(target=iniciar_servidor, daemon=True).start()
+            input("[!] Servidor activo. Presiona ENTER para detener.")
+
+        elif opc == "3":
+            print("\n\033[1;36m[+] CREADOR: TRX-LILL\n[+] AÑO: 2026\n[+] ESPECIALIZADO EN HERRAMIENTAS OSINT.\033[0m")
+            input("\nPresiona ENTER para volver...")
+
+        elif opc == "4":
+            print("\n\033[1;35m[!] LICENCIA: SOFTWARE DE CÓDIGO ABIERTO.\n[!] ADVERTENCIA: EL USO DE ESTA HERRAMIENTA ES RESPONSABILIDAD EXCLUSIVA DEL USUARIO.\n[!] PROHIBIDO EL USO CON FINES ILÍCITOS O SIN CONSENTIMIENTO.\033[0m")
+            input("\nPresiona ENTER para volver...")
+        
+        elif opc == "5":
+            break
 
 if __name__ == "__main__":
     main()
