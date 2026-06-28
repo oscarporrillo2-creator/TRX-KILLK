@@ -9,7 +9,6 @@ clear
 echo -e "\e[1;31m"
 echo "  ====================================================="
 echo "         INICIANDO INSTALACIÓN DE TRX-KILL V1.1.1.1
-echo "         BY:OSCAR TRX-KILL 
 echo "  ====================================================="
 echo -e "\e[0m"
 
