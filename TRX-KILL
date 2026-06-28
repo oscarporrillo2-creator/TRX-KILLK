@@ -1,135 +1,206 @@
-#!/usr/bin/env python3
-# ==========================================
-# TOOL: TRX-LILL ADVANCED PHONE LOOKUP
-# AUTHOR: TRX-LILL
-# YEAR: 2026
-# ==========================================
+# ORIGINAL CREATOR: Luca Garofalo (Lucksi)
+# MODIFIED BY: TXM LILL
+# Copyright (C) 2026 TXM LILL
+# License: GNU General Public License v3.0
 
+import phonenumbers
+import MrHolmes as holmes
 import json
 import urllib.request
-import urllib.parse
-import phonenumbers
-from phonenumbers import geocoder, carrier, timezone
+from phonenumbers import carrier
+from phonenumbers import geocoder
+from phonenumbers import timezone
+from Core.Support import Font
+from Core.Support import Language
+from Core.Support import Map
 from time import sleep
 
-def mostrar_banner():
-    # Banner personalizado con tu nombre TRX-LILL
-    print("\033[1;31m" + r"""
-  _________ ______  __   __       _      _____ _      _      
- |__   __|  ____\ \ \ / /      | |    |_   _| |    | |     
-    | |  | |__   \ \ ' /       | |      | | | |    | |     
-    | |  |  __|   > > <        | |      | | | |    | |     
-    | |  | |____ / / . \       | |____ _| |_| |____| |____ 
-    |_|  |_|____/_/_/ \_\      |______|_____|______|______|
-    """ + "\033[0m")
-    print("\033[1;33m" + "      [+] ENHANCED OSINT PHONE LOOKUP BY TRX-LILL [+]" + "\033[0m")
-    print("\033[1;30m" + "   =====================================================" + "\033[0m\n")
+filename = Language.Translation.Get_Language()
+filename
 
-def buscar_numero():
-    mostrar_banner()
-    num = input("\033[1;32m[?]\033[0m Introduce el número (ej: 54911xxxxxxx o con +): ")
-    
-    # Asegurar el formato con el símbolo '+'
-    if not num.startswith("+"):
-        num_formateado = "+" + num
-    else:
-        num_formateado = num
 
-    print("\033[1;34m\n[*] ESCANEANDO E INFORMANDO NÚMERO...\033[0m")
-    sleep(2)
+class Phony:
 
-    try:
-        # Parsear el número telefónico
-        phone_obj = phonenumbers.parse(num_formateado, None)
+    @staticmethod
+    def Get_GeoLocation(zone, param1, param2, jsonfile, num, Type):
+        url_string = "https://nominatim.openstreetmap.org/search.php?q={}&format=json".format(
+            zone)
         
-        # Validar existencia real del número
-        if not phonenumbers.is_valid_number(phone_obj):
-            print("\033[1;31m[-] NÚMERO NO REAL O INVÁLIDO\033[0m")
-            if not phonenumbers.is_possible_number(phone_obj):
-                print("\033[1;31m[-] El número ingresado es completamente improbable.\033[0m")
-                return
+        # Petición con User-Agent personalizado por TXM LILL para saltar el error 403
+        req = urllib.request.Request(
+            url_string,
+            headers={'User-Agent': 'MrHolmes-Modified-By-TXMLILL/4.0 (Contact: txmlill@custom.osint)'}
+        )
+        
+        print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE +
+              Language.Translation.Translate_Language(filename, "Phone", "Geo", "None").format(num))
+        sleep(2)
+        
+        url = urllib.request.urlopen(req)
+        try:
+            Reader = url.read()
+            parser = json.loads(Reader)
+            Lat = parser[0]["lat"]
+            Lon = parser[0]["lon"]
+            data = {
+                "Geolocation": {
+                    "Latitude": Lat,
+                    "Longitude": Lon
+                }
+            }
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
+                  "LATITUDE:" + Font.Color.GREEN + " {}".format(Lat))
+            sleep(2)
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
+                  "LONGITUDE:" + Font.Color.GREEN + " {}".format(Lon))
+            sleep(2)
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
+                  "GOOGLE MAPS LINK: https://www.google.it/maps/place/{},{}".format(Lat, Lon))
+            datafile = open(jsonfile, "a", encoding="utf-8")
+            json.dump(data, datafile,
+                      ensure_ascii=False, indent=4)
+            datafile.close()
+            Map.Creation.mapPhone(jsonfile, Lat, Lon, num, Type)
+
+        except Exception as e:
+            print(Font.Color.RED + "\n[!]" + Font.Color.WHITE + Language.Translation.Translate_Language(
+                filename, "Phone", "NoGeo", "None") + str(e))
+            pass
+
+    @staticmethod
+    def Number(num, report, code, Mode, Type, username):
+        phoneList=[]
+        print(Font.Color.GREEN +
+              "\n[+]" + Font.Color.WHITE + Language.Translation.Translate_Language(filename, "Phone", "Scan", "None").format(num))
+        sleep(4)
+        FormattedPhoneNumber = "+" + num
+        try:
+            Phone = phonenumbers.parse(FormattedPhoneNumber, None)
+        except Exception as e:
+            inp = input(Font.Color.RED + "\n[!]" + Font.Color.WHITE +
+                        Language.Translation.Translate_Language(filename, "Phone", "NotFound2", "None"))
+            holmes.Main.Menu(Mode)
         else:
-            print("\033[1;34m[I] ESTADO: El número es válido y real.\033[0m")
+            if not phonenumbers.is_valid_number(Phone):
+                reality = (Language.Translation.Translate_Language(
+                    filename, "Phone", "NoReal", "None"))
+            else:
+                reality = Language.Translation.Translate_Language(
+                    filename, "Phone", "Real", "None")
+                print(Font.Color.BLUE + "\n[I]" + Font.Color.WHITE + reality)
 
-        # --- EXTRACCIÓN DE INFORMACIÓN AVANZADA ---
-        # Códigos y formatos de numeración
-        numero_e164 = phonenumbers.format_number(phone_obj, phonenumbers.PhoneNumberFormat.E164).replace("+", "")
-        prefijo_pais = phonenumbers.format_number(phone_obj, phonenumbers.PhoneNumberFormat.INTERNATIONAL).split(" ")[0]
-        codigo_region = phonenumbers.region_code_for_country_code(int(prefijo_pais.replace("+", "")))
-        numero_local = phonenumbers.format_number(phone_obj, phonenumbers.PhoneNumberFormat.E164).replace(prefijo_pais.replace("+", ""), "")
-        numero_internacional = phonenumbers.format_number(phone_obj, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-
-        # Datos de Registro / Compañía / Ubicación básica
-        pais = geocoder.country_name_for_number(phone_obj, "en")
-        localizacion = geocoder.description_for_number(phone_obj, "en")
-        operador = carrier.name_for_number(phone_obj, "en")
-
-        # Imprimir resultados de texto obtenidos
-        print(f"\033[1;33m[v]\033[0m NÚMERO INTERNACIONAL: {numero_internacional}")
-        print(f"\033[1;33m[v]\033[0m NÚMERO LOCAL: {numero_local}")
-        print(f"\033[1;33m[v]\033[0m PREFIJO DE PAÍS: {prefijo_pais}")
-        print(f"\033[1;33m[v]\033[0m CÓDIGO DE PAÍS (ISO): {codigo_region}")
-        print(f"\033[1;33m[v]\033[0m PAÍS DE ORIGEN: {pais}")
-        print(f"\033[1;33m[v]\033[0m ÁREA / PROVINCIA: {localizacion if localizacion else 'No especificada'}")
-        print(f"\033[1;33m[v]\033[0m OPERADOR TELEFÓNICO / ISP: {operador if operador else 'Desconocido'}")
-
-        # Indexación de Zonas Horarias
-        idx = 1
-        for tz in timezone.time_zones_for_number(phone_obj):
-            print(f"\033[1;33m[v]\033[0m ZONA HORARIA N°{idx}: {tz}")
-            idx += 1
-        sleep(1)
-
-        # Formateos alternativos generados automáticamente
-        print("\033[1;32m\n[+] FORMATEANDO ESTRUCTURAS DE NÚMERO...\033[0m")
-        sleep(1)
-        fmt_rfc3966 = f"tel:{numero_internacional.replace(' ', '-')}"
-        print(f"\033[1;33m[v]\033[0m FORMATO INTERNACIONAL E164: +{numero_e164}")
-        print(f"\033[1;33m[v]\033[0m FORMATO RFC3966: {fmt_rfc3966}")
-
-        # --- SECCIÓN DE GEOLOCALIZACIÓN COMPLETA (OpenStreetMap API) ---
-        # Determinar el string exacto para buscar las coordenadas en el mapa
-        if localizacion:
-            zona_busqueda = localizacion
-        else:
-            zona_busqueda = pais
-
-        if zona_busqueda:
-            print("\033[1;32m\n[+] CONSULTANDO COORDENADAS GEOGRÁFICAS...\033[0m")
-            sleep(1)
-            
-            # Codificación correcta para evitar fallas con espacios o caracteres raros
-            query_encoded = urllib.parse.quote(zona_busqueda)
-            url_api = f"https://nominatim.openstreetmap.org/search.php?q={query_encoded}&format=json"
-            
-            # Request estructurada con el User-Agent propio para evitar el Error 403
-            req = urllib.request.Request(
-                url_api,
-                headers={'User-Agent': f'TRX-LILL-AdvancedLookup/2.0 (Contact: trx_lill@custom.osint)'}
+            number = phonenumbers.format_number(
+                Phone, phonenumbers.PhoneNumberFormat.E164
+            ).replace("+", "")
+            numberCode = phonenumbers.format_number(
+                Phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+            ).split(" ")[0]
+            numberNation = phonenumbers.region_code_for_country_code(
+                int(numberCode)
             )
-            
-            with urllib.request.urlopen(req) as respuesta:
-                datos = json.loads(respuesta.read().decode())
-                
-                if datos:
-                    latitud = datos[0]["lat"]
-                    longitud = datos[0]["lon"]
-                    print(f"\033[1;33m[v]\033[0m LATITUD: \033[1;32m{latitud}\033[0m")
-                    print(f"\033[1;33m[v]\033[0m LONGITUD: \033[1;32m{longitud}\033[0m")
-                    print(f"\033[1;33m[v]\033[0m ENLACE DE MAPA: \033[1;36mhttps://www.google.com/maps/place/{latitud},{longitud}\033[0m")
-                    
-                    # Guardar una copia local en JSON
-                    reporte_json = {"Numero": numero_internacional, "Latitud": latitud, "Longitud": longitud, "Pais": pais}
-                    with open("trx_resultado.json", "w", encoding="utf-8") as f_json:
-                        json.dump(reporte_json, f_json, indent=4, ensure_ascii=False)
-                    print("\n\033[1;32m[+]\033[0m Datos guardados exitosamente en 'trx_resultado.json'")
+
+            localNumber = phonenumbers.format_number(
+                Phone, phonenumbers.PhoneNumberFormat.E164
+            ).replace(numberCode, "")
+            international = phonenumbers.format_number(
+                Phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+            )
+
+            nation = geocoder.country_name_for_number(Phone, "en")
+            location = geocoder.description_for_number(Phone, "en")
+            carrierName = carrier.name_for_number(Phone, "en")
+
+            print(Font.Color.YELLOW + "\n[v]" + Font.Color.WHITE +
+                  "INTERNATIONAL NUMBER: {}".format(international))
+            print(Font.Color.YELLOW +
+                  "[v]" + Font.Color.WHITE + "LOCAL NUMBER: {}".format(localNumber))
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
+                  "COUNTRY PREFIX: {}".format(numberCode))
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
+                  "COUNTRY CODE: {}".format(numberNation))
+            print(Font.Color.YELLOW +
+                  "[v]" + Font.Color.WHITE + "COUNTRY: {}".format(nation))
+            print(Font.Color.YELLOW +
+                  "[v]" + Font.Color.WHITE + "AREA/ZONE: {}".format(location))
+            print(Font.Color.YELLOW +
+                  "[v]" + Font.Color.WHITE + "CARRIER/ISP: {}".format(carrierName))
+            i = 1
+            for timezoneResult in timezone.time_zones_for_number(Phone):
+                print(Font.Color.YELLOW +
+                      "[v]" + Font.Color.WHITE + "TIMEZONE N°{}: {}".format(i, timezoneResult))
+                i = i+1
+            sleep(2)
+            if location != "":
+                jsonfile = report.replace(
+                    num + ".txt", "Area_GeoLocation.json")
+                if " " in location:
+                    zone = location.split(" ", 1)[1]
                 else:
-                    print("\033[1;31m[-] No se localizaron coordenadas exactas en Nominatim para la región.\033[0m")
-        else:
-            print("\033[1;31m[-] No hay datos de región suficientes para calcular coordenadas geográficas.\033[0m")
+                    zone = location
+                print(Font.Color.YELLOW + "\n[v]" + Font.Color.WHITE +
+                      Language.Translation.Translate_Language(filename, "Phone", "Area", "None"))
+                try:
+                    Phony.Get_GeoLocation(zone, "Lat", "Long", jsonfile, num, Type)
+                except Exception as e:
+                    print(Font.Color.RED + "[!]" + Font.Color.WHITE + "SOMETHING WENT WRONG")
+                    pass
+            else:
+                print(Font.Color.RED + "[!]" + Font.Color.WHITE +
+                      Language.Translation.Translate_Language(filename, "Phone", "NoArea", "None"))
+            zone = timezoneResult.split("/", 1)[-1]
 
-    except Exception as error:
-        print(f"\033[1;31m[-] ERROR DURANTE LA EJECUCIÓN: {error}\033[0m")
+            if zone != "Unknown":
+                print(Font.Color.YELLOW + "\n[v]" + Font.Color.WHITE +
+                      Language.Translation.Translate_Language(filename, "Phone", "Zone", "None"))
+                jsonfile = report.replace(
+                    num + ".txt", "Zone_GeoLocation.json")
+                Phony.Get_GeoLocation(zone, "Lat", "Long", jsonfile, num, Type)
 
-if __name__ == "__main__":
-    buscar_numero()
+            else:
+                print(Font.Color.RED + "\n[!]" + Font.Color.WHITE +
+                      Language.Translation.Translate_Language(filename, "Phone", "NoZone", "None").format(number))
+            print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE +
+                  Language.Translation.Translate_Language(filename, "Phone", "Affidability", "None"))
+            sleep(2)
+            if phonenumbers.is_possible_number(Phone):
+                print(Font.Color.YELLOW + "\n[v]" + Font.Color.WHITE +
+                      Language.Translation.Translate_Language(filename, "Phone", "Exist", "None"))
+            else:
+                print(Font.Color.RED +
+                      "\n[!]" + Font.Color.WHITE + Language.Translation.Translate_Language(filename, "Phone", "NoExist", "None"))
+
+            f = open(report, "a")
+            f.write("INTERNATIONAL NUMBER: " + international + "\n")
+            f.write("LOCAL NUMBER: " + localNumber + "\n")
+            f.write("COUNTRY PREFIX: " + numberCode + "\n")
+            f.write("COUNTRY CODE: " + numberNation + "\n")
+            f.write("COUNTRY:" + nation + "\n")
+            f.write("AREA/ZONE" + location + "\n")
+            f.write("CARRIER/ISP: " + carrierName + "\n")
+            f.write("TIMEZONE: " + timezoneResult + "\n")
+            f.close()
+
+            if code == 0:
+                pass
+            elif code == 1:
+                f = open("Temp/Phone/Code.txt", "w")
+                f.write(numberNation)
+                f.close()
+            formatted2 = str(international).replace(numberCode,"").replace(" ","-")
+            formatted3 = formatted2.replace("-","",1)
+            formatted4 = str(international).replace(numberCode,"0").replace(" ","")
+            formatted1 = "(%2B{}){}".format(numberCode,str(formatted2).replace("-","",1))
+            formatted5 = formatted4.replace("0","")
+            phoneList.append(formatted1)
+            phoneList.append(formatted2)
+            phoneList.append(formatted4)
+            phoneList.append(formatted5)
+            print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + "FORMATTING PHONE NUMBER...")
+            sleep(2)
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + "INTERNATIONAL-FORMAT: "+ international)
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + "RFC3966-FORMAT: "+ formatted1.replace("%2B",""))
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + "LOCAL-FORMAT: " + formatted3)
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + "LOCAL-FORMAT(2): " + formatted4)
+            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
+            "LOCAL-FORMAT(3): " + formatted5)
+            return phoneList
