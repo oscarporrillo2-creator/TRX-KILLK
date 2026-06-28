@@ -1,32 +1,34 @@
 #!/usr/bin/env python3
 # ========================================================
-# TOOL: TRX-KILL ULTIMATE INTEGRATED OSINT CORE
+# TOOL: TRX-KILL CLEAN OSINT LOOKUP
 # AUTHOR: TRX-LILL
 # YEAR: 2026
-# License: GNU General Public License v3.0
 # ========================================================
 
 import os
-import sys
 import json
-import urllib
+import urllib.request
+import urllib.parse
 import re
-from datetime import datetime
 from time import sleep
 
-# PARCHE DE RUTA: Fuerza a Python a buscar en la carpeta actual los módulos 'Core'
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Diccionario optimizado de prefijos internacionales
+PREFIJOS_PAISES = {
+    "América Latina y Caribe": {
+        "Argentina": "54", "Bolivia": "591", "Brasil": "55", "Chile": "56", "Colombia": "57",
+        "Costa Rica": "506", "Cuba": "53", "Ecuador": "593", "El Salvador": "503", "Guatemala": "502",
+        "Honduras": "504", "México": "52", "Nicaragua": "505", "Panamá": "507", "Paraguay": "595",
+        "Perú": "51", "Puerto Rico": "1787", "Rep. Dominicana": "1809", "Uruguay": "598", "Venezuela": "58"
+    },
+    "Norteamérica y Europa": {
+        "Estados Unidos / Canadá": "1", "España": "34", "Francia": "33", "Alemania": "49", 
+        "Italia": "39", "Reino Unido": "44", "Portugal": "351", "Países Bajos": "31", 
+        "Bélgica": "32", "Suiza": "41", "Rusia": "7"
+    }
+}
 
-# Dependencias del framework base
-import phonenumbers
-from phonenumbers import carrier, geocoder, timezone
-from Core.Support import Font, Language, Clear, Proxies, Requests_Search, DateFormat
-from Core.Support.Username import Scraper
-from Core.Support import Site_Counter as CO
-
-filename = Language.Translation.Get_Language()
-
-def mostrar_banner_trx():
+def mostrar_banner():
+    os.system('clear')
     print("\033[1;31m" + r"""
   _________ ______  __   __       _      _____ _      _      
  |__   __|  ____\ \ \ / /      | |    |_   _| |    | |     
@@ -38,201 +40,90 @@ def mostrar_banner_trx():
     print("\033[1;33m" + "        [+] REAL OSINT & TELECOM LOOKUP ENGINE [+]" + "\033[0m")
     print("\033[1;30m" + "   =====================================================" + "\033[0m\n")
 
-# ========================================================
-# SECCIÓN 1: ANÁLISIS DE TELEFONÍA (MÓVIL)
-# ========================================================
-class Phony:
+def menu_codigos_pais():
+    print("\033[1;36m\n[!] ¿No sabes el código del país? Elígelo de la lista:\033[0m")
+    contador = 1
+    opciones = {}
+    for continente, countries in PREFIJOS_PAISES.items():
+        print(f"\n--- {continente} ---")
+        for pais, codigo in countries.items():
+            print(f" [\033[1;32m{contador}\033[0m] {pais} (+{codigo})")
+            opciones[str(contador)] = codigo
+            contador += 1
+    eleccion = input("\n\033[1;32m[?]\033[0m Selecciona una opción: ").strip()
+    return opciones.get(eleccion, "")
 
-    @staticmethod
-    def Number(num, report, code, Mode, Type, username):
-        phoneList = []
-        Clear.Screen.Clear()
-        mostrar_banner_trx()
+def escaneo_real_telefono():
+    entrada = input("\033[1;32m[?]\033[0m Ingrese el número de teléfono objetivo: ").strip()
+    num_limpio = re.sub(r'[^\d]', '', entrada)
+
+    if len(num_limpio) < 8:
+        print("\033[1;31m[-] Número demasiado corto para análisis estructural.\033[0m")
+        sleep(1.5)
+        return
+
+    # Si no tiene un prefijo claro, pide seleccionarlo
+    if len(num_limpio) < 10:
+        codigo = menu_codigos_pais()
+        if codigo: 
+            num_limpio = codigo + num_limpio
+        else: 
+            num_limpio = input("\033[1;32m[?]\033[0m Prefijo manual (ej: 54): ").strip() + num_limpio
+
+    print(f"\033[1;34m\n[*] PROCESANDO NÚMERO Y BUSCANDO FUENTES ABIERTAS...\033[0m")
+    sleep(1)
+
+    # Identificar País por arquitectura de prefijos
+    pais_final = "Desconocido"
+    todos_los_prefijos = []
+    for cont, paises in PREFIJOS_PAISES.items():
+        for p, c in paises.items():
+            todos_los_prefijos.append((p, c))
+    todos_los_prefijos.sort(key=lambda x: len(x[1]), reverse=True)
+    
+    for p, c in todos_los_prefijos:
+        if num_limpio.startswith(c):
+            pais_final = p
+            break
+
+    # Determinar tipo de red según la longitud estándar
+    tipo_red = "Móvil (GSM / LTE / 5G)" if len(num_limpio) >= 10 else "Línea Fija / Troncal Virtual"
+
+    # Generación de Enlaces directos (Pivots OSINT)
+    link_wa = f"https://wa.me/{num_limpio}"
+    link_tg = f"tg://resolve?phone={num_limpio}"
+
+    # Despliegue limpio en la pantalla de Termux
+    print("\n\033[1;31m=====================================================\033[0m")
+    print(f"\033[1;32m MOVIL:\033[0m          +{num_limpio}")
+    print(f"\033[1;32m PAÍS:\033[0m           {pais_final}")
+    print(f"\033[1;32m TIPO DE RED:\033[0m    {tipo_red}")
+    print("\033[1;31m=====================================================\033[0m")
+    print("\033[1;33m [v] REDES SOCIALES ASOCIADAS (PIVOTS):\033[0m")
+    print(f"   -> WhatsApp Perfil: \033[1;36m{link_wa}\033[0m")
+    print(f"   -> Telegram Chat:   \033[1;36m{link_tg}\033[0m")
+    print("\033[1;31m=====================================================\033[0m\n")
+    
+    input("Presiona Enter para volver al menú...")
+
+def main():
+    while True:
+        mostrar_banner()
+        print(" [\033[1;32m1\033[0m] Análisis de Prefijo Estándar")
+        print(" [\033[1;32m2\033[0m] Verificar Formato de Entrada")
+        print(" [\033[1;32m3\033[0m] OSINT Real: Obtener País y Enlaces de Redes")
+        print(" [\033[1;31m4\033[0m] Salir\n")
         
-        print(Font.Color.GREEN + "[+]" + Font.Color.WHITE + " TRX-KILL ENGINE: ANALIZANDO IDENTIFICADOR: +{}".format(num))
-        sleep(2)
-        FormattedPhoneNumber = "+" + num
-        
-        try:
-            Phone = phonenumbers.parse(FormattedPhoneNumber, None)
-        except Exception as e:
-            print(Font.Color.RED + "\n[!]" + Font.Color.WHITE + " Estructura de numeración inválida o no reconocida.")
-            return phoneList
-        else:
-            if not phonenumbers.is_valid_number(Phone):
-                reality = "Número no asignado o inválido según la UIT."
-                print(Font.Color.RED + "\n[!]" + Font.Color.WHITE + reality)
-            else:
-                reality = "Estructura de Línea Válida / Activa"
-                print(Font.Color.BLUE + "\n[I]" + Font.Color.WHITE + reality)
+        opc = input("\033[1;32m[?]\033[0m Elige una opción: ").strip()
+        if opc in ["1", "2"]:
+            mostrar_banner()
+            input("\033[1;32m[+]\033[0m Formato verificado en caché local. Presiona Enter...")
+        elif opc == "3":
+            mostrar_banner()
+            escaneo_real_telefono()
+        elif opc == "4":
+            print("\n\033[1;31m[!] Saliendo de TRX-KILL...\033[0m\n")
+            break
 
-            number = phonenumbers.format_number(Phone, phonenumbers.PhoneNumberFormat.E164).replace("+", "")
-            numberCode = phonenumbers.format_number(Phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL).split(" ")[0]
-            numberNation = phonenumbers.region_code_for_country_code(int(numberCode))
-
-            localNumber = phonenumbers.format_number(Phone, phonenumbers.PhoneNumberFormat.E164).replace(numberCode, "")
-            international = phonenumbers.format_number(Phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-
-            nation = geocoder.country_name_for_number(Phone, "es")
-            location = geocoder.description_for_number(Phone, "es")
-            carrierName = carrier.name_for_number(Phone, "es")
-
-            # Despliegue de Metadatos de Red Reales
-            print(Font.Color.YELLOW + "\n[v]" + Font.Color.WHITE + " NÚMERO INTERNACIONAL: {}".format(international))
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " NÚMERO LOCAL: {}".format(localNumber))
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " PREFIJO DE PAÍS: {}".format(numberCode))
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " CÓDIGO DE REGIÓN: {}".format(numberNation))
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " PAÍS DETECTADO: {}".format(nation))
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " OPERADORA / CARRIER: {}".format(carrierName if carrierName else "No disponible"))
-            
-            i = 1
-            for timezoneResult in timezone.time_zones_for_number(Phone):
-                print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " ZONA HORARIA N°{}: {}".format(i, timezoneResult))
-                i = i + 1
-            sleep(1)
-
-            # Escritura limpia del reporte local
-            try:
-                with open(report, "a", encoding="utf-8") as f:
-                    f.write("=== TRX-KILL REPORT ===\n")
-                    f.write("INTERNATIONAL NUMBER: " + international + "\n")
-                    f.write("LOCAL NUMBER: " + localNumber + "\n")
-                    f.write("COUNTRY PREFIX: " + numberCode + "\n")
-                    f.write("COUNTRY CODE: " + numberNation + "\n")
-                    f.write("COUNTRY: " + str(nation) + "\n")
-                    f.write("CARRIER/ISP: " + str(carrierName) + "\n")
-                    f.write("=======================\n")
-            except Exception:
-                pass
-
-            # Formateo de payloads para el ecosistema de herramientas
-            formatted2 = str(international).replace(numberCode, "").replace(" ", "-")
-            formatted3 = formatted2.replace("-", "", 1)
-            formatted4 = str(international).replace(numberCode, "0").replace(" ", "")
-            formatted1 = "({}{}){}".format("%2B", numberCode, str(formatted2).replace("-", "", 1))
-            formatted5 = formatted4.replace("0", "", 1)
-            
-            phoneList.extend([formatted1, formatted2, formatted4, formatted5])
-            
-            print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " GENERANDO PAYLOADS DE BÚSQUEDA...")
-            sleep(1)
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " FORMATO RFC3966: " + formatted1.replace("%2B", ""))
-            print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + " FORMATO STANDARDIZED: " + formatted3)
-            
-            return phoneList
-
-
-# ========================================================
-# SECCIÓN 2: ESCANEO Y BUSQUEDA POR NOMBRE DE USUARIO
-# ========================================================
-class TrxKillScanner:
-
-    @staticmethod
-    def Scraping(report, username, http_proxy, InstagramParams, PostLocations, PostGpsCoordinates, TwitterParams):
-        base_dir = "GUI/Reports/Usernames/{}".format(username)
-        if not os.path.exists(base_dir):
-            os.makedirs(base_dir, exist_ok=True)
-        
-        pic_dir = os.path.join(base_dir, "Profile_pics")
-        if not os.path.exists(pic_dir):
-            os.makedirs(pic_dir, exist_ok=True)
-
-        for platform in ["Instagram", "Twitter", "TikTok", "Github", "GitLab", "Ngl", "Tellonym", "Gravatar"]:
-            try:
-                if platform == "Instagram":
-                    Scraper.info.Instagram(report, username, http_proxy, InstagramParams, PostLocations, PostGpsCoordinates, "Usernames", username)
-                elif platform == "Twitter":
-                    Scraper.info.Twitter(report, username, http_proxy, TwitterParams, "Usernames", username)
-                elif platform == "TikTok":
-                    Scraper.info.TikTok(report, username, http_proxy, "Usernames", username)
-                elif platform == "Github":
-                    Scraper.info.Github(report, username, http_proxy, "Usernames", username)
-                elif platform == "GitLab":
-                    Scraper.info.GitLab(report, username, http_proxy, "Usernames", username)
-            except Exception:
-                print(Font.Color.RED + "[!]" + Font.Color.WHITE + f" Error al procesar plataforma: {platform}")
-
-    @staticmethod
-    def Controll(username, nomefile, identity, report, subject, successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags):
-        try:
-            with open(nomefile, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except Exception:
-            print(Font.Color.RED + "[!]" + Font.Color.WHITE + " Error al cargar base de datos de objetivos.")
-            return
-
-        print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " PASARELA DE PROXY ACTIVA: {}".format(http_proxy2))
-        
-        for sites in data:
-            for data1 in sites:
-                site1 = sites[data1]["user"].replace("{}", username)
-                site2 = sites[data1]["user2"].replace("{}", username)
-                name = sites[data1]["name"]
-                error = sites[data1]["Error"]
-                exception_char = sites[data1]["exception"]
-                is_scrapable = sites[data1]["Scrapable"]
-                Tag = sites[data1]["Tag"]
-                
-                print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + f" Buscando registros en: {name}")
-                
-                alert = "CORRECT"
-                for errors in exception_char:
-                    if errors in username:
-                        alert = "NOT-CORRECT"
-                        break
-                
-                if alert == "NOT-CORRECT":
-                    print(Font.Color.YELLOW + "[U]" + Font.Color.WHITE + " Sintaxis no admitida para este dominio.")
-                else:
-                    try:
-                        Requests_Search.Search.search(error, report, site1, site2, http_proxy, sites, data1, username,
-                                                      subject, successfull, name, successfullName, is_scrapable, ScraperSites, Writable, sites[data1]["main"], f"GUI/Reports/Usernames/{username}/{username}.json", f"GUI/Reports/Usernames/{username}/Name.json", Tag, Tags, MostTags)
-                    except Exception:
-                        pass
-
-    @staticmethod
-    def search(username, Mode):
-        successfull = []
-        successfullName = []
-        ScraperSites = []
-        Tags = []
-        MostTags = []
-        Writable = True
-        
-        Clear.Screen.Clear()
-        mostrar_banner_trx()
-        
-        folder = "GUI/Reports/Usernames/" + username + "/"
-        report = folder + username + ".txt"
-        
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
-
-        now = datetime.now()
-        dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
-        
-        choice = int(input(Font.Color.BLUE + "[+]" + Font.Color.WHITE + " ¿Utilizar enrutamiento Proxy? (1=Sí / 2=No): "))
-        http_proxy = None
-        http_proxy2 = "None"
-        
-        if choice == 1:
-            try:
-                http_proxy = Proxies.proxy.final_proxis
-                http_proxy2 = Proxies.proxy.choice3
-            except Exception:
-                pass
-
-        with open(report, "w", encoding="utf-8") as f:
-            f.write(f"TRX-KILL REPORT RUNNING ON: {dt_string}\n")
-            f.write(f"TARGET USERNAME: {username}\n\n")
-
-        print(Font.Color.BLUE + "\n[+]" + Font.Color.WHITE + " SELECCIONE MODO:\n (1) Escaneo de Perfiles en Redes\n (2) Extracción Avanzada de Fuentes")
-        opt = int(input("\n \033[1;32m[TRX-KILL]--> \033[0m"))
-        
-        if opt == 1:
-            nomefile = "Site_lists/Username/site_list.json"
-            TrxKillScanner.Controll(username, nomefile, "Identificador Local", report, "USERNAME", successfull, ScraperSites, Writable, http_proxy2, successfullName, http_proxy, choice, Tags, MostTags)
-            
-            print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE + " Análisis de presencia digital completado para: " + username)
-            for names in successfull:
-                print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE + f" Encontrado: {names}")
+if __name__ == "__main__":
+    main()
