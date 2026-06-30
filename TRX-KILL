@@ -29,7 +29,7 @@ def log():
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -SISTEMA OSINT REAL Y OPERATIVO.")
+    print("  -SISTEMA OSINT GLOBAL OPERATIVO.")
     print("  -PROHIBIDO SU MAL USO.\n\033[0m")
 
 def main():
@@ -38,7 +38,6 @@ def main():
     while True:
         try:
             banner()
-            # Menú compacto para asegurar visibilidad total
             print(" [1] RASTREAR NÚMERO | [2] LINK-ZP    | [3] CREADOR   | [4] VERSIONES")
             print(" [5] ANALIZAR LINK   | [6] ADM SISTEMA| [7] INFO      | [8] REPOSITORIO")
             print(" [9] PROCESOS        | [10] SPAM-SMS  | [0] SALIR")
@@ -46,33 +45,39 @@ def main():
             sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
             
             if sel == "1":
-                num = input("\nNÚMERO (ej: 51xxxxxxxx): ")
+                num = input("\nINGRESA NÚMERO CON CÓDIGO DE PAÍS (Ej: 5411...): ")
+                print(f"\n[!] RASTREANDO EN BASE DE DATOS GLOBAL...")
                 res = requests.get(f"https://api.numlookupapi.com/v1/validate/{num}?apikey={API_KEY}")
                 data = res.json()
                 if data.get('valid'):
-                    print(f"\n[+] PAÍS: {data.get('country_name')}\n[+] OPERADOR: {data.get('carrier')}\n[+] TIPO: {data.get('line_type')}")
-                else: print("[!] NÚMERO NO VÁLIDO.")
-                input("\n[Enter]...")
+                    print(f"\n[+] PAÍS: {data.get('country_name', 'Desconocido')}")
+                    print(f"[+] PREFIJO: {data.get('country_prefix', 'N/A')}")
+                    print(f"[+] OPERADOR: {data.get('carrier', 'N/A')}")
+                    print(f"[+] TIPO: {data.get('line_type', 'N/A')}")
+                else:
+                    print("[!] NÚMERO NO VÁLIDO O SIN REGISTROS.")
+                input("\nPresiona Enter...")
             elif sel == "2":
-                print("\n[!] SERVIDOR: http://127.0.0.1:5000\n[!] PRESIONA ENTER PARA VOLVER.")
-                input()
+                print("\n[!] SERVIDOR ACTIVO: http://127.0.0.1:5000")
+                input("\n[!] PRESIONA ENTER PARA VOLVER.")
             elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
-            elif sel == "4": print("\n# VERSIÓN: 1.4.5"); input()
-            elif sel == "5": print("\n# ANALIZANDO..."); input()
+            elif sel == "4": print("\n# VERSIÓN: 1.4.5 (GLOBAL)"); input()
+            elif sel == "5": print("\n# ANALIZANDO LINK..."); input()
             elif sel == "6":
                 if input("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
                 input()
-            elif sel == "7": print("\n# SCRIPT OSINT."); input()
-            elif sel == "8": print("\n# REPO PRIVADO"); input()
-            elif sel == "9": print("\n# SERVIDOR ACTIVO"); input()
+            elif sel == "7": print("\n# SCRIPT OSINT DE SEGURIDAD."); input()
+            elif sel == "8": print("\n# REPOSITORIO PRIVADO."); input()
+            elif sel == "9": print("\n# PROCESOS: SERVIDOR RUNNING"); input()
             elif sel == "10":
                 n = input("NÚMERO: ")
                 m = input("MENSAJE: ")
                 os.system(f"termux-sms-send -n {n} '{m}'")
                 print("[!] SMS ENVIADO."); input()
             elif sel == "0": sys.exit()
-            
         except KeyboardInterrupt:
             continue
+        except Exception as e:
+            print(f"\n[!] ERROR: {e}"); input()
 
 if __name__ == "__main__": main()
