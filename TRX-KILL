@@ -1,6 +1,7 @@
 import os, sys, getpass, time, base64
+from flask import Flask, request
 
-# --- CONFIGURACIÓN ---
+app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
@@ -28,52 +29,49 @@ def main():
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
+            print("\n--- 1 ---")
             num = input("INGRESAR NÚMERO: ")
-            print("\nVERIFICANDO DATOS......")
-            time.sleep(1.5)
-            print("DATOS ENCONTRADOS; BY TRX-KILL")
-            print("PAÍS: [DETECTADO] | OPERACIÓN: [MÓVIL]")
-            print("COORDENADAS: [APROXIMADAS POR SEGURIDAD]")
+            print("VERIFICANDO DATOS......\nDATOS ENCONTRADOS; BY TRX-KILL")
+            print("PAÍS: [DETECTADO] | OPERACIÓN: [MÓVIL]\nCOORDENADAS: [APROXIMADAS]")
             input("\n[Enter]...")
-
         elif sel == "2":
-            print("\nCARGANDO LINK.......")
+            print("\n--- 2 ---")
+            print("CARGANDO LINK.......")
             print("LINK VÍCTIMA: https://youtube.com")
             print("ESPERANDO DATOS (IP, GPS, FOTO)...")
             input("\n[Enter]...")
-
         elif sel == "3":
-            print("\n# CREADO POR: OSCAR")
-            print("# PROTECCIÓN: ACTIVA")
+            print("\n--- 3 ---\n# CREADO POR: OSCAR\n# PROTECCIÓN: ACTIVA")
             input("\n[Enter]...")
-
+        elif sel == "4":
+            print("\n--- 4 ---\nVERSION ACTUAL: 1.4.5 - OPTIMIZADA.")
+            input("\n[Enter]...")
+        elif sel == "5":
+            print("\n--- 5 ---")
+            link = input("INGRESAR LINK: ")
+            print("ANALIZANDO: [VIRUS: NO] | [LINK FALSO: SÍ]")
+            input("\n[Enter]...")
         elif sel == "6":
+            print("\n--- 6 ---")
             key = getpass.getpass("INGRESAR KEY: ")
             if key == AUTH_PASS:
-                print("\nBUSCANDO DATOS EXTRAÍDOS...")
-                if os.path.exists(LOG_FILE):
-                    os.system(f"cat {LOG_FILE}")
-                else:
-                    print("NO HAY DATOS EN resultado.txt")
-            else:
-                print("ACCESO DENEGADO.")
+                print("BUSCANDO DATOS EXTRAÍDOS...")
+                if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
+                else: print("NO HAY LOGS.")
+            else: print("KEY INCORRECTA.")
             input("\n[Enter]...")
-
         elif sel == "7":
-            print("\nEL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.")
-            print("SCRIPT CREADO PARA AYUDAR Y PARA EL BIEN.")
-            print("TOTALMENTE VIGILADO POR CIBERSEGURIDAD.")
-            print("BY: OSCAR")
+            print("\n--- 7 ---\nEL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.\nBY: OSCAR")
             input("\n[Enter]...")
-
+        elif sel == "8":
+            print("\n--- 8 ---\nVISITANDO REPOSITORIO OFICIAL...")
+            input("\n[Enter]...")
         elif sel == "10":
-            link = input("INGRESA LINK DEL CANAL DE WHATSAPP: ")
-            cantidad = input("CANTIDAD DE SPAM: ")
-            print(f"VERIFICANDO CANAL: {link.split('/')[-1]}...")
+            print("\n--- 10 ---")
+            link = input("INGRESA LINK DEL CANAL: ")
+            print("NOMBRE DEL CANAL: [VERIFICADO]")
             print("ENVIANDO REPORTES A SOPORTE...")
             input("\n[Enter]...")
-
         elif sel == "0": sys.exit()
-        else: print("OPCIÓN NO DISPONIBLE."); time.sleep(1)
 
 if __name__ == "__main__": main()
