@@ -5,12 +5,10 @@ app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
-# API integrada correctamente
 API_KEY = "5ZDdh5yEBGFvsa3YWfONVBxqHHPT1stNpJaBEV" 
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- SERVIDOR DE CAPTURA ---
 @app.route('/')
 def index():
     return """<html><body><script>
@@ -31,52 +29,50 @@ def log():
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -SISTEMA OSINT CON API INTEGRADA.")
+    print("  -SISTEMA OSINT REAL Y OPERATIVO.")
     print("  -PROHIBIDO SU MAL USO.\n\033[0m")
 
 def main():
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000), daemon=True).start()
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
     
     while True:
-        banner()
-        menu = ["1-RASTREAR NÚMERO", "2-LINK-ZP", "3-CREADOR", "4-VERSIONES", "5-ANALIZAR LINK", "6-ADM SISTEMA", "7-INFO SCRIPT", "8-REPOSITORIO", "9-PROCESOS", "10-SPAM-SMS"]
-        for opt in menu: print(f"  [{opt}]")
-        
         try:
+            banner()
+            # Menú compacto para asegurar visibilidad total
+            print(" [1] RASTREAR NÚMERO | [2] LINK-ZP    | [3] CREADOR   | [4] VERSIONES")
+            print(" [5] ANALIZAR LINK   | [6] ADM SISTEMA| [7] INFO      | [8] REPOSITORIO")
+            print(" [9] PROCESOS        | [10] SPAM-SMS  | [0] SALIR")
+            
             sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
+            
             if sel == "1":
-                num = input("\nINGRESA NÚMERO (ej: 5411xxxxxxxx): ")
-                print(f"\n[!] CONSULTANDO API PARA: {num}...")
-                # Consulta real a API de telefonía con tu clave
+                num = input("\nNÚMERO (ej: 5411xxxxxxxx): ")
                 res = requests.get(f"https://api.numlookupapi.com/v1/validate/{num}?apikey={API_KEY}")
                 data = res.json()
-                if 'valid' in data and data['valid']:
-                    print(f"\n[+] DATOS ENCONTRADOS:")
-                    print(f"PAÍS: {data.get('country_name', 'N/A')}")
-                    print(f"OPERADOR: {data.get('carrier', 'N/A')}")
-                    print(f"TIPO: {data.get('line_type', 'N/A')}")
-                else: print("[!] NÚMERO NO VÁLIDO O SIN REGISTROS.")
-                input("\nPresiona Enter...")
-
+                if data.get('valid'):
+                    print(f"\n[+] PAÍS: {data.get('country_name')}\n[+] OPERADOR: {data.get('carrier')}\n[+] TIPO: {data.get('line_type')}")
+                else: print("[!] NÚMERO NO VÁLIDO.")
+                input("\n[Enter]...")
             elif sel == "2":
-                print("\n[!] SERVIDOR ACTIVO: http://127.0.0.1:5000")
-                input("\n[!] COMPARTE EL LINK Y ESPERA... ENTER PARA VOLVER.")
+                print("\n[!] SERVIDOR: http://127.0.0.1:5000\n[!] PRESIONA ENTER PARA VOLVER.")
+                input()
             elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
             elif sel == "4": print("\n# VERSIÓN: 1.4.5"); input()
             elif sel == "5": print("\n# ANALIZANDO..."); input()
             elif sel == "6":
                 if input("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
                 input()
-            elif sel == "7": print("\n# SCRIPT OSINT DE SEGURIDAD."); input()
-            elif sel == "8": print("\n# REPOSITORIO: PRIVADO"); input()
-            elif sel == "9": print("\n# PROCESOS: SERVIDOR RUNNING"); input()
+            elif sel == "7": print("\n# SCRIPT OSINT."); input()
+            elif sel == "8": print("\n# REPO PRIVADO"); input()
+            elif sel == "9": print("\n# SERVIDOR ACTIVO"); input()
             elif sel == "10":
                 n = input("NÚMERO: ")
                 m = input("MENSAJE: ")
                 os.system(f"termux-sms-send -n {n} '{m}'")
                 print("[!] SMS ENVIADO."); input()
             elif sel == "0": sys.exit()
-        except Exception as e:
-            print(f"\n[!] ERROR: {e}"); input()
+            
+        except KeyboardInterrupt:
+            continue
 
 if __name__ == "__main__": main()
