@@ -21,7 +21,6 @@ def banner():
       \033[1;37mVERSION: 1.2.3  |  STATUS: ONLINE  |  OSCAR\033[0m
 \033[1;32m""" + "="*60 + "\033[0m")
 
-# --- WEB UI (ENCUESTA NEÓN) ---
 HTML_ENCUESTA = """
 <!DOCTYPE html><html><head><style>
     body { background:#050505; color:#0f0; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
@@ -86,13 +85,16 @@ def main():
             input()
         elif sel == "11":
             link = input("INGRESAR LINK: ")
-            cant = input("CANTIDAD DE SPAM Y MOTIVOS: ")
-            canal = input("NAME CANAL: ")
-            seguidores = input("SEGUIDORES: ")
-            print("\nENVIANDO SPAM...")
-            time.sleep(2)
-            print(f"CANAL: {canal} | SEGUIDORES: {seguidores}")
-            print("ESTADO: CANAL ACTIVO (NO SUSPENDIDO)")
+            if "whatsapp.com/channel/" in link:
+                canal = input("NAME CANAL: ")
+                seg = input("SEGUIDORES: ")
+                print(f"\n[!] INICIANDO SPAM MASIVO A {canal}...")
+                for i in range(1, 6):
+                    time.sleep(1)
+                    print(f"[*] Inyectando paquetes de reporte {i*20}%...")
+                print("\n[+] ESTADO: CANAL EN PROCESO DE SUSPENSIÓN")
+            else:
+                print("[!] ERROR: LINK NO VÁLIDO")
             input("\n[Enter] para volver.")
         elif sel == "7": sys.exit()
         else: print("OPCIÓN NO DISPONIBLE..."); time.sleep(1)
