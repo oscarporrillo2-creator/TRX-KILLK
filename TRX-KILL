@@ -46,7 +46,7 @@ def main():
             sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
             
             if sel == "1":
-                num = input("\nNÚMERO (ej: 5411xxxxxxxx): ")
+                num = input("\nNÚMERO (ej: 51xxxxxxxx): ")
                 res = requests.get(f"https://api.numlookupapi.com/v1/validate/{num}?apikey={API_KEY}")
                 data = res.json()
                 if data.get('valid'):
